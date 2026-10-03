@@ -7,6 +7,8 @@
  * Run:   ./view_compare image.txt out.bmp [crop_x crop_y]      then open out.bmp in any image viewer.
  * It also writes the three FULL-SIZE images separately: <out>_original.bmp, <out>_before.bmp, <out>_after.bmp
  * (open them with  eog <out>_original.bmp <out>_before.bmp <out>_after.bmp  and flip with the arrow keys).
+ * The AFTER filter can be changed without recompiling, e.g.  AFTER_ALPHA=0.5 ./view_compare img.txt out.bmp
+ * (env AFTER_D, AFTER_SC, AFTER_SS, AFTER_ALPHA; defaults 3, 80, 5, 0.2). Smaller alpha = stronger smoothing.
  * Metrics are printed against the ORIGINAL image (color: RGB PSNR from the mean MSE, mean channel SSIM). */
 #define main sem1_main
 #include "sem1.c"
@@ -51,6 +53,10 @@ int main(int argc, char **argv)
     if (mode == MODE_COLOR) { if (!read_color_image_from_txt(argv[1], orig[0], orig[1], orig[2], WIDTH, HEIGHT)) return 1; }
     else if (!read_image_from_txt(argv[1], orig[0], WIDTH, HEIGHT)) return 1;
 
+    int a_d = getenv("AFTER_D") ? atoi(getenv("AFTER_D")) : 3;
+    float a_sc = getenv("AFTER_SC") ? (float)atof(getenv("AFTER_SC")) : 80.0f;
+    float a_ss = getenv("AFTER_SS") ? (float)atof(getenv("AFTER_SS")) : 5.0f;
+    float a_al = getenv("AFTER_ALPHA") ? (float)atof(getenv("AFTER_ALPHA")) : 0.2f;
     int cw = PW * NPANEL, ch = PW * 2;
     uint8_t *canvas[3] = {NULL, NULL, NULL};
     for (int p = 0; p < np; p++) canvas[p] = calloc((size_t)cw * ch, 1);
@@ -58,7 +64,7 @@ int main(int argc, char **argv)
     for (int p = 0; p < np; p++) {
         code_plane(orig[p], rec[p]);
         bilateral_preprocess(rec[p], cur[p], WIDTH, HEIGHT, 5, 20.0f, 20.0f, 0.8f);   /* current published setting */
-        bilateral_preprocess(rec[p], tun[p], WIDTH, HEIGHT, 3, 80.0f, 5.0f, 0.2f);    /* tuned setting (round 2)   */
+        bilateral_preprocess(rec[p], tun[p], WIDTH, HEIGHT, a_d, a_sc, a_ss, a_al);    /* AFTER (tuned by default)  */
         const uint8_t *pan[NPANEL] = {orig[p], cur[p], tun[p]};
         for (int i = 0; i < NPANEL; i++) {
             put_panel(canvas[p], cw, i * PW, 0, pan[i]);
@@ -67,7 +73,8 @@ int main(int argc, char **argv)
             ssim[i] += SSIM_window_based(orig[p], (uint8_t *)pan[i], WIDTH, HEIGHT);
         }
     }
-    const char *name[NPANEL] = {"ORIGINAL", "BEFORE: old filter d5 sc20 ss20 a0.8", "AFTER: tuned filter d3 sc80 ss5 a0.2"};
+    char after_label[96]; snprintf(after_label, sizeof after_label, "AFTER: filter d%d sc%.0f ss%.0f a%.2f", a_d, a_sc, a_ss, a_al);
+    const char *name[NPANEL] = {"ORIGINAL", "BEFORE: old filter d5 sc20 ss20 a0.8", after_label};
     for (int i = 0; i < NPANEL; i++) {
         double m = mse[i] / np;
         printf("%-34s PSNR=%6.2f dB  SSIM=%.4f  MSE=%7.2f\n", name[i], m == 0.0 ? 100.0 : 10.0 * log10(255.0 * 255.0 / m), ssim[i] / np, m);
