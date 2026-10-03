@@ -2,6 +2,7 @@
 # Same-session, interleaved comparison of LBG time at np = 8 and 14:
 #   v3-auto  : ./lbg_par   (pam_v3.c, default strategy)      v3s-auto : ./lbg_par_s (pam_v3s.c, default strategy)
 #   v3s-equal / v3s-adaptive : ./lbg_par_s with VQ_STRATEGY forced
+# Labels can be changed:  NAME_A=v4-auto NAME_B=v3s-auto ./ab_lbg.sh ...   (equal/adaptive rows use ./lbg_par_s)
 # Sequential baseline = ./lbg_seq pinned to a P-core. Median of 7. usage: ./ab_lbg.sh img1.txt [img2.txt ...]
 REPS=7; SEQ_CPU=${SEQ_CPU:-6}; NPS=${NPS:-"8 14"}
 med(){ sort -g | awk '{a[NR]=$1} END{print a[int((NR+1)/2)]}'; }
@@ -24,7 +25,7 @@ for IMG in "$@"; do
       E+=($(VQ_STRATEGY=equal    mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par_s "$IMG" --gray | lbgt))
       D+=($(VQ_STRATEGY=adaptive mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par_s "$IMG" --gray | lbgt))
     done
-    for v in "v3-auto:A" "v3s-auto:B" "v3s-equal:E" "v3s-adaptive:D"; do
+    for v in "${NAME_A:-v3-auto}:A" "${NAME_B:-v3s-auto}:B" "${NAME_B:-v3s}-equal:E" "${NAME_B:-v3s}-adaptive:D"; do
       name=${v%%:*}; arr=${v##*:}; eval "vals=(\"\${$arr[@]}\")"
       m=$(printf '%s\n' "${vals[@]}" | med)
       awk -v n="$NAME" -v np=$np -v v=$name -v m=$m -v s=$SL 'BEGIN{printf "%s,%d,%s,%s,%.2f,%s\n",n,np,v,m,s/m,s}'
