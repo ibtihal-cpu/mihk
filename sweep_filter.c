@@ -31,11 +31,18 @@ static int load(const char *path, Img *m)
 }
 
 typedef struct { int d; float sc, ss, a; double psnr, ssim; } Cfg;
-static const int   GD[]  = {3, 5, 7};
-static const float GSC[] = {10, 15, 20, 30, 45};
-static const float GSS[] = {1, 2, 5, 20};
-static const float GA[]  = {0.2f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
-#define NCFG (3 * 5 * 4 * 7)
+/* Round 2 grid: round 1 put the optimum on the grid edge (alpha=0.2, sigma_color=45), so it is
+   extended (alpha down to 0 = pure filter output, sigma_color up to 120). sigma_space was
+   insensitive for d=3 in round 1, so it is fixed. */
+static const int   GD[]  = {3, 5};
+static const float GSC[] = {20, 30, 45, 60, 80, 120};
+static const float GSS[] = {5};
+static const float GA[]  = {0.0f, 0.05f, 0.1f, 0.15f, 0.2f, 0.3f, 0.4f};
+#define NGD  ((int)(sizeof GD  / sizeof *GD))
+#define NGSC ((int)(sizeof GSC / sizeof *GSC))
+#define NGSS ((int)(sizeof GSS / sizeof *GSS))
+#define NGA  ((int)(sizeof GA  / sizeof *GA))
+#define NCFG (NGD * NGSC * NGSS * NGA)
 
 static int cmp_psnr(const void *x, const void *y)
 { double a = ((const Cfg *)x)->psnr, b = ((const Cfg *)y)->psnr; return (a < b) - (a > b); }
@@ -63,8 +70,8 @@ int main(int argc, char **argv)
 
     Cfg def = {5, 20.0f, 20.0f, 0.8f, 0, 0};
     Cfg *g = calloc(NCFG, sizeof(Cfg)); int n = 0;
-    for (unsigned a = 0; a < 3; a++) for (unsigned b = 0; b < 5; b++)
-      for (unsigned c = 0; c < 4; c++) for (unsigned e = 0; e < 7; e++)
+    for (int a = 0; a < NGD; a++) for (int b = 0; b < NGSC; b++)
+      for (int c = 0; c < NGSS; c++) for (int e = 0; e < NGA; e++)
         g[n++] = (Cfg){GD[a], GSC[b], GSS[c], GA[e], 0, 0};
 
     /* 1. PSNR of every config on the tuning images (mean) */
@@ -72,7 +79,7 @@ int main(int argc, char **argv)
         double s = 0;
         for (int i = 0; i < nt; i++) { double p, q; apply(&tune[i], &g[k], &p, &q, 0); s += p; }
         g[k].psnr = s / nt;
-        if (k % 60 == 0) fprintf(stderr, "grid %d/%d\n", k, n);
+        if (k % 20 == 0) fprintf(stderr, "grid %d/%d\n", k, n);
     }
     qsort(g, n, sizeof(Cfg), cmp_psnr);
 
