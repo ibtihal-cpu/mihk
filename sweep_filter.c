@@ -3,6 +3,9 @@
  * so it changes neither CR nor the codebook). All metrics are against the pristine original.
  *
  * Build (sem1.c in the same folder):  gcc -O2 -Wall -Wextra -o sweep_filter sweep_filter.c -lm
+ * Gray (262144 values) and color (786432 values, "R G B" per pixel) text images are both accepted; for a
+ * color image each channel is coded and filtered independently, PSNR comes from the MSE averaged over
+ * R,G,B (the RGB PSNR of the thesis protocol) and SSIM is the mean channel-wise SSIM.
  * Run:   ./sweep_filter tune1.txt tune2.txt -- test1.txt test2.txt test3.txt
  *        images before "--" are used to CHOOSE the parameters, images after it only to EVALUATE.
  * Selection rule: among the top-10 configs by mean tuning PSNR, take the best one whose mean tuning
@@ -11,22 +14,34 @@
 #include "sem1.c"
 #undef main
 
-typedef struct { uint8_t *orig, *rec; char name[256]; } Img;
+typedef struct { int np; uint8_t *orig[3], *rec[3]; char name[256]; } Img;
 
-static int load(const char *path, Img *m)
+static void code_plane(const uint8_t *plane, uint8_t *rec)
 {
-    m->orig = malloc(WIDTH * HEIGHT); m->rec = malloc(WIDTH * HEIGHT);
-    snprintf(m->name, sizeof m->name, "%s", path);
-    if (!read_image_from_txt(path, m->orig, WIDTH, HEIGHT)) return 0;
     uint8_t *tr = NULL;
-    int nv = build_training_vectors(m->orig, &tr);
+    int nv = build_training_vectors((uint8_t *)plane, &tr);
     float *tf = calloc((size_t)nv * VLEN, sizeof(float));
     float *cb = calloc((size_t)CODEBOOK_SIZE * VLEN, sizeof(float));
     uint8_t *lab = malloc(nv);
     for (int i = 0; i < nv * VLEN; i++) tf[i] = (float)tr[i];
     lbg(tf, nv, CODEBOOK_SIZE, lab, cb, 0);
-    decompress_image(m->rec, WIDTH, HEIGHT, BLOCK_SIZE, cb, lab);
+    decompress_image(rec, WIDTH, HEIGHT, BLOCK_SIZE, cb, lab);
     free(tr); free(tf); free(cb); free(lab);
+}
+
+static int load(const char *path, Img *m)
+{
+    snprintf(m->name, sizeof m->name, "%s", path);
+    ImgMode mode = detect_mode_from_file(path);
+    if (mode == MODE_UNKNOWN) { fprintf(stderr, "%s: not 512x512 gray or color text image\n", path); return 0; }
+    m->np = (mode == MODE_COLOR) ? 3 : 1;
+    for (int p = 0; p < m->np; p++) { m->orig[p] = malloc(WIDTH * HEIGHT); m->rec[p] = malloc(WIDTH * HEIGHT); }
+    if (mode == MODE_COLOR) {
+        if (!read_color_image_from_txt(path, m->orig[0], m->orig[1], m->orig[2], WIDTH, HEIGHT)) return 0;
+    } else {
+        if (!read_image_from_txt(path, m->orig[0], WIDTH, HEIGHT)) return 0;
+    }
+    for (int p = 0; p < m->np; p++) code_plane(m->orig[p], m->rec[p]);
     return 1;
 }
 
@@ -50,9 +65,15 @@ static int cmp_psnr(const void *x, const void *y)
 static void apply(const Img *m, const Cfg *c, double *psnr, double *ssim, int want_ssim)
 {
     uint8_t *out = malloc(WIDTH * HEIGHT);
-    bilateral_preprocess(m->rec, out, WIDTH, HEIGHT, c->d, c->sc, c->ss, c->a);
-    *psnr = compute_psnr(m->orig, out, WIDTH * HEIGHT);
-    *ssim = want_ssim ? SSIM_window_based(m->orig, out, WIDTH, HEIGHT) : 0.0;
+    double mse = 0, ss = 0;
+    for (int p = 0; p < m->np; p++) {
+        bilateral_preprocess(m->rec[p], out, WIDTH, HEIGHT, c->d, c->sc, c->ss, c->a);
+        mse += compute_mse(m->orig[p], out, WIDTH * HEIGHT);
+        if (want_ssim) ss += SSIM_window_based(m->orig[p], out, WIDTH, HEIGHT);
+    }
+    mse /= m->np;
+    *psnr = (mse == 0.0) ? 100.0 : 10.0 * log10((255.0 * 255.0) / mse);
+    *ssim = want_ssim ? ss / m->np : 0.0;
     free(out);
 }
 
@@ -64,7 +85,7 @@ int main(int argc, char **argv)
         Img *m = after ? &test[ne] : &tune[nt];
         if (!load(argv[i], m)) { fprintf(stderr, "cannot load %s\n", argv[i]); return 1; }
         if (after) ne++; else nt++;
-        fprintf(stderr, "loaded %s (%s)\n", argv[i], after ? "test" : "tune");
+        fprintf(stderr, "loaded %s (%s, %s)\n", argv[i], after ? "test" : "tune", m->np == 3 ? "color" : "gray");
     }
     if (nt == 0) { fprintf(stderr, "usage: %s tune... -- test...\n", argv[0]); return 1; }
 
