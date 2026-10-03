@@ -1,6 +1,6 @@
 /* view_compare.c -- one image file showing, side by side, the effect of the post-compression filter.
- * Top row (full 512x512):    ORIGINAL | LBG only (no filter) | CURRENT filter | TUNED filter
- * Bottom row (crop x4 zoom): the same four panels, zoomed on a 128x128 region (default centre).
+ * Top row (full 512x512):    ORIGINAL | BEFORE (reconstruction with the old filter) | AFTER (tuned filter)
+ * Bottom row (crop x4 zoom): the same three panels, zoomed on a 128x128 region (default centre).
  * Gray (262144 values) and color (786432 values, "R G B" per pixel) 512x512 text images are accepted;
  * a color image is coded and filtered per channel and written as a 24-bit color BMP.
  * Build (sem1.c in the same folder):  gcc -O2 -Wall -Wextra -o view_compare view_compare.c -lm
@@ -11,7 +11,7 @@
 #undef main
 
 #define PW 512
-#define NPANEL 4
+#define NPANEL 3
 
 static void put_panel(uint8_t *canvas, int cw, int px, int py, const uint8_t *img)
 { for (int y = 0; y < PW; y++) memcpy(canvas + (size_t)(py + y) * cw + px, img + (size_t)y * PW, PW); }
@@ -57,7 +57,7 @@ int main(int argc, char **argv)
         code_plane(orig[p], rec[p]);
         bilateral_preprocess(rec[p], cur[p], WIDTH, HEIGHT, 5, 20.0f, 20.0f, 0.8f);   /* current published setting */
         bilateral_preprocess(rec[p], tun[p], WIDTH, HEIGHT, 3, 80.0f, 5.0f, 0.2f);    /* tuned setting (round 2)   */
-        const uint8_t *pan[NPANEL] = {orig[p], rec[p], cur[p], tun[p]};
+        const uint8_t *pan[NPANEL] = {orig[p], cur[p], tun[p]};
         for (int i = 0; i < NPANEL; i++) {
             put_panel(canvas[p], cw, i * PW, 0, pan[i]);
             zoom_panel(canvas[p], cw, i * PW, PW, pan[i], cx, cy);
@@ -65,14 +65,14 @@ int main(int argc, char **argv)
             ssim[i] += SSIM_window_based(orig[p], (uint8_t *)pan[i], WIDTH, HEIGHT);
         }
     }
-    const char *name[NPANEL] = {"ORIGINAL", "LBG only (no filter)", "CURRENT filter d5 sc20 ss20 a0.8", "TUNED filter d3 sc80 ss5 a0.2"};
+    const char *name[NPANEL] = {"ORIGINAL", "BEFORE: old filter d5 sc20 ss20 a0.8", "AFTER: tuned filter d3 sc80 ss5 a0.2"};
     for (int i = 0; i < NPANEL; i++) {
         double m = mse[i] / np;
         printf("%-34s PSNR=%6.2f dB  SSIM=%.4f  MSE=%7.2f\n", name[i], m == 0.0 ? 100.0 : 10.0 * log10(255.0 * 255.0 / m), ssim[i] / np, m);
     }
     if (mode == MODE_COLOR) save_bmp_color(argv[2], canvas[0], canvas[1], canvas[2], cw, ch);
     else save_bmp_gray(argv[2], canvas[0], cw, ch);
-    printf("wrote %s (%dx%d, %s): top = full images, bottom = 4x zoom of region x=%d..%d y=%d..%d\n", argv[2], cw, ch,
+    printf("wrote %s (%dx%d, %s): top = full images (original | before | after), bottom = 4x zoom of region x=%d..%d y=%d..%d\n", argv[2], cw, ch,
            mode == MODE_COLOR ? "color" : "gray", cx, cx + 127, cy, cy + 127);
     return 0;
 }
