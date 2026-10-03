@@ -10,5 +10,6 @@ for f in $IMGS "$@"; do
   n=$(basename "$f" .txt); [ "$n" = gray ] && n=lena
   echo "== $n"; ./view_compare "$f" "$OUT/$n.bmp" | sed -n '2,3p'
 done
-echo; ls "$OUT"/*.bmp | wc -l; echo "images in $OUT  ->  eog $OUT/*.bmp"
-command -v eog >/dev/null && eog "$OUT"/*.bmp &
+echo; echo "montages: $OUT/<name>.bmp   |   full-size triples: $OUT/<name>_original.bmp  _before.bmp  _after.bmp"
+echo "view one image (original, before, after; arrow keys to flip):   v(){ eog $OUT/$1_original.bmp $OUT/$1_before.bmp $OUT/$1_after.bmp; }; v lena"
+echo "names: $(ls "$OUT"/*.bmp | grep -v -E '_(original|before|after)\.bmp$' | xargs -n1 basename | sed 's/\.bmp$//' | tr '\n' ' ')"

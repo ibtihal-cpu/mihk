@@ -5,6 +5,8 @@
  * a color image is coded and filtered per channel and written as a 24-bit color BMP.
  * Build (sem1.c in the same folder):  gcc -O2 -Wall -Wextra -o view_compare view_compare.c -lm
  * Run:   ./view_compare image.txt out.bmp [crop_x crop_y]      then open out.bmp in any image viewer.
+ * It also writes the three FULL-SIZE images separately: <out>_original.bmp, <out>_before.bmp, <out>_after.bmp
+ * (open them with  eog <out>_original.bmp <out>_before.bmp <out>_after.bmp  and flip with the arrow keys).
  * Metrics are printed against the ORIGINAL image (color: RGB PSNR from the mean MSE, mean channel SSIM). */
 #define main sem1_main
 #include "sem1.c"
@@ -72,6 +74,17 @@ int main(int argc, char **argv)
     }
     if (mode == MODE_COLOR) save_bmp_color(argv[2], canvas[0], canvas[1], canvas[2], cw, ch);
     else save_bmp_gray(argv[2], canvas[0], cw, ch);
+    {   /* the three images at full size, one file each */
+        char base[512], f[600]; snprintf(base, sizeof base, "%s", argv[2]);
+        size_t L = strlen(base); if (L > 4 && !strcmp(base + L - 4, ".bmp")) base[L - 4] = 0;
+        const char *tag[NPANEL] = {"original", "before", "after"};
+        for (int i = 0; i < NPANEL; i++) {
+            const uint8_t **src = (const uint8_t **)(i == 0 ? orig : i == 1 ? cur : tun);
+            snprintf(f, sizeof f, "%s_%s.bmp", base, tag[i]);
+            if (mode == MODE_COLOR) save_bmp_color(f, (uint8_t *)src[0], (uint8_t *)src[1], (uint8_t *)src[2], WIDTH, HEIGHT);
+            else save_bmp_gray(f, (uint8_t *)src[0], WIDTH, HEIGHT);
+        }
+    }
     printf("wrote %s (%dx%d, %s): top = full images (original | before | after), bottom = 4x zoom of region x=%d..%d y=%d..%d\n", argv[2], cw, ch,
            mode == MODE_COLOR ? "color" : "gray", cx, cx + 127, cy, cy + 127);
     return 0;
