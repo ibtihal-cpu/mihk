@@ -12,7 +12,7 @@ fi
 taskset -c $SEQ_CPU true 2>/dev/null || { echo "ABORT: cannot pin to CPU $SEQ_CPU (set SEQ_CPU)"; exit 1; }
 [ -x ./lbg_seq ] && [ -x ./lbg_par ] || { echo "ABORT: build lbg_seq and lbg_par first"; exit 1; }
 
-echo "image,mode,np,LBG_s,Total_s,iters,SpeedupLBG,SpeedupTotal,Eff%" | tee $OUT
+echo "image,mode,np,LBG_s,Total_s,iters,SpeedupLBG,SpeedupTotal,Eff%,SpeedupLBG_perIter" | tee $OUT
 for IMG in "$@"; do
   n=$(wc -w < "$IMG"); NAME=$(basename "$IMG" .txt)
   if   [ "$n" = 262144 ]; then M=gray
@@ -33,7 +33,8 @@ for IMG in "$@"; do
     fi
   done
   SL=$(printf '%s\n' "${L[@]}" | med); ST=$(printf '%s\n' "${T[@]}" | med)
-  echo "$NAME,$M,seq,$SL,$ST,$IT,1.00,1.00,100" | tee -a $OUT
+  SIT=$IT
+  echo "$NAME,$M,seq,$SL,$ST,$IT,1.00,1.00,100,1.00" | tee -a $OUT
 
   for np in $NPS; do
     BIND="--bind-to core"; [ "$np" -gt 14 ] && BIND="--bind-to hwthread"
@@ -50,7 +51,7 @@ for IMG in "$@"; do
       T+=($(echo "$out" | awk '/Total execution time/{print $4}'))
     done
     PL=$(printf '%s\n' "${L[@]}" | med); PT=$(printf '%s\n' "${T[@]}" | med)
-    awk -v n="$NAME" -v m=$M -v np=$np -v pl=$PL -v pt=$PT -v sl=$SL -v st=$ST -v it=$IT \
-      'BEGIN{printf "%s,%s,%d,%s,%s,%s,%.2f,%.2f,%.0f\n",n,m,np,pl,pt,it,sl/pl,st/pt,100*sl/pl/np}' | tee -a $OUT
+    awk -v n="$NAME" -v m=$M -v np=$np -v pl=$PL -v pt=$PT -v sl=$SL -v st=$ST -v it=$IT -v sit=$SIT \
+      'BEGIN{printf "%s,%s,%d,%s,%s,%s,%.2f,%.2f,%.0f,%.2f\n",n,m,np,pl,pt,it,sl/pl,st/pt,100*sl/pl/np,(sl/sit)/(pl/it)}' | tee -a $OUT
   done
 done
