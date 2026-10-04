@@ -3,7 +3,7 @@
 # Interleaved runs (equal, adaptive, equal, ...) -> median of 5; raw runs saved in eq_ad_raw.csv.
 # usage (in the folder with ./lbg_par and run_all.sh): NPS="2 4 6 8 10 12 14" ./run_eq_ad.sh
 D=/home/ibtihal
-IMGS="$D/lbg_exp/gray.txt $D/boat_img.txt $D/cameraman_img.txt $D/peppers_img.txt $D/chest_xray2_img.txt $D/mammo2_img.txt $D/lung_ct2_img.txt $D/brain_mri2_img.txt $D/lena_color.txt $D/retina2_color.txt $D/brain_pet3_color.txt $D/brain_pet4_color.txt"
+IMGS="${IMGS:-$D/lbg_exp/gray.txt $D/boat_img.txt $D/cameraman_img.txt $D/peppers_img.txt $D/chest_xray2_img.txt $D/mammo2_img.txt $D/lung_ct2_img.txt $D/brain_mri2_img.txt $D/lena_color.txt $D/retina2_color.txt $D/brain_pet3_color.txt $D/brain_pet4_color.txt}"
 NPS=${NPS:-"2 4 6 8 10 12 14"}; REPS=5; OUT=${OUT:-eq_ad.csv}; RAW=${RAW:-eq_ad_raw.csv}
 med(){ sort -g | awk '{a[NR]=$1} END{print a[int((NR+1)/2)]}'; }
 [ "$(cat /sys/class/power_supply/AC*/online 2>/dev/null | head -1)" = "1" ] || { echo "ABORT: charger not connected"; exit 1; }
