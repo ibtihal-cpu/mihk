@@ -19,8 +19,13 @@ for IMG in $IMGS; do
   for np in $NPS; do
     EL=(); AL=(); ET=(); AT=()
     for r in $(seq $REPS); do
-      oe=$(VQ_STRATEGY=equal    mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
-      oa=$(VQ_STRATEGY=adaptive mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
+      if [ $((r % 2)) -eq 1 ]; then   # alternate the order of the two strategies between repetitions
+        oe=$(VQ_STRATEGY=equal    mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
+        oa=$(VQ_STRATEGY=adaptive mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
+      else
+        oa=$(VQ_STRATEGY=adaptive mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
+        oe=$(VQ_STRATEGY=equal    mpirun -np $np --allow-run-as-root --bind-to core ./lbg_par "$IMG" --$M)
+      fi
       el=$(echo "$oe" | lbgt $M); et=$(echo "$oe" | tott); al=$(echo "$oa" | lbgt $M); at=$(echo "$oa" | tott)
       EL+=($el); ET+=($et); AL+=($al); AT+=($at)
       echo "$NAME,$np,equal,$r,$el,$et" >> $RAW; echo "$NAME,$np,adaptive,$r,$al,$at" >> $RAW
