@@ -213,7 +213,7 @@ void save_bmp_color(const char *filename, uint8_t *R, uint8_t *G, uint8_t *B,
     fclose(f);
 }
 
-static void bilateral_preprocess(const uint8_t *src, uint8_t *dst,
+static void __attribute__((unused)) bilateral_preprocess(const uint8_t *src, uint8_t *dst,
                                   int W, int H,
                                   int d, float sigmaColor, float sigmaSpace,
                                   float alpha)
@@ -258,6 +258,98 @@ static void bilateral_preprocess(const uint8_t *src, uint8_t *dst,
         }
     }
     free(gs);
+}
+
+/* ============================================================
+   [BFPAR] Distributed post-compression bilateral filter.
+   bilateral_rows(): the SAME per-pixel arithmetic as bilateral_preprocess() (the original
+   is kept untouched above), but computes only rows [y0,y1) and writes them to a band
+   buffer (dst[(y-y0)*W + x]). src must hold the FULL image. Every output pixel depends
+   only on src, so the result is bit-identical to the full-image call for ANY row split.
+   ============================================================ */
+static void bilateral_rows(const uint8_t *src, uint8_t *dst,
+                           int W, int H, int y0, int y1,
+                           int d, float sigmaColor, float sigmaSpace, float alpha)
+{
+    int radius = d / 2;
+    int diam   = 2 * radius + 1;
+
+    float two_sc_sq = 2.0f * sigmaColor * sigmaColor;
+    float two_ss_sq = 2.0f * sigmaSpace * sigmaSpace;
+
+    float *gs = (float *)malloc((size_t)diam * diam * sizeof(float));
+    for (int i = -radius; i <= radius; i++)
+        for (int j = -radius; j <= radius; j++)
+            gs[(i + radius) * diam + (j + radius)] =
+                expf(-((float)(i * i + j * j)) / two_ss_sq);
+
+    for (int y = y0; y < y1; y++) {
+        for (int x = 0; x < W; x++) {
+            float center = (float)src[y * W + x];
+            float sum  = 0.0f;
+            float wsum = 0.0f;
+
+            for (int i = -radius; i <= radius; i++) {
+                int yy = y + i;
+                if (yy < 0 || yy >= H) continue;
+                for (int j = -radius; j <= radius; j++) {
+                    int xx = x + j;
+                    if (xx < 0 || xx >= W) continue;
+                    float val  = (float)src[yy * W + xx];
+                    float diff = val - center;
+                    float gr   = expf(-(diff * diff) / two_sc_sq);
+                    float w    = gs[(i + radius) * diam + (j + radius)] * gr;
+                    sum  += w * val;
+                    wsum += w;
+                }
+            }
+            float bf = sum / wsum;
+            float blended = alpha * center + (1.0f - alpha) * bf;
+            if (blended < 0.0f)   blended = 0.0f;
+            if (blended > 255.0f) blended = 255.0f;
+            dst[(y - y0) * W + x] = (uint8_t)(blended + 0.5f);
+        }
+    }
+    free(gs);
+}
+
+/* Row boundaries y_start[0..size]: rank r filters rows [y_start[r], y_start[r+1]).
+   Proportional to vec_counts, so the equal/adaptive (speed-weighted) distribution
+   already chosen for LBG is reused for the filter as well. */
+static void bf_row_bounds(int size, const int *vec_counts, int num_vectors, int *y_start)
+{
+    long long cum = 0;
+    y_start[0] = 0;
+    for (int r = 0; r < size; r++) {
+        cum += vec_counts[r];
+        long long e = ((long long)HEIGHT * cum + num_vectors / 2) / num_vectors;
+        y_start[r + 1] = (r == size - 1) ? HEIGHT : (int)e;
+    }
+}
+
+/* Collective (all ranks must call). img: valid input on rank 0, W*H buffer on the others.
+   out: W*H output buffer on rank 0 only (ignored elsewhere). */
+static void parallel_bilateral(uint8_t *img, uint8_t *out, int rank, int size,
+                               const int *vec_counts, int num_vectors)
+{
+    MPI_Bcast(img, WIDTH * HEIGHT, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+
+    int *ys  = (int *)malloc((size_t)(size + 1) * sizeof(int));
+    int *cnt = (int *)malloc((size_t)size * sizeof(int));
+    int *dsp = (int *)malloc((size_t)size * sizeof(int));
+    bf_row_bounds(size, vec_counts, num_vectors, ys);
+    for (int r = 0; r < size; r++) {
+        cnt[r] = (ys[r + 1] - ys[r]) * WIDTH;
+        dsp[r] = ys[r] * WIDTH;
+    }
+
+    uint8_t *band = (uint8_t *)malloc((size_t)cnt[rank] + 1);
+    bilateral_rows(img, band, WIDTH, HEIGHT, ys[rank], ys[rank + 1],
+                   BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
+    MPI_Gatherv(band, cnt[rank], MPI_UINT8_T,
+                out, cnt, dsp, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+
+    free(band); free(ys); free(cnt); free(dsp);
 }
 
 int build_training_vectors(uint8_t *image, uint8_t **training_set)
@@ -959,6 +1051,11 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
     uint8_t *ssim_a = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
     uint8_t *ssim_b = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
 
+    /* [BFPAR] hoisted so the rank-0 section can be split around the collective filter */
+    uint8_t *codebook_data = NULL, *reconstructed_lbg = NULL, *labels_delta_u = NULL;
+    uint8_t *reconstructed = NULL, *reconstructed_filtered = NULL;
+    int codebook_bytes = 0;
+
     if (rank == 0) {
         printf("\nFinal codebook (%d codewords):\n", K);
         for (int c = 0; c < 10; c++) {
@@ -975,13 +1072,13 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         double H = compute_entropy(labels, num_vectors, K);
         printf("Entropy before Huffman = %.3f bits/symbol\n", H);
 
-        uint8_t *codebook_data = malloc(K * vlen);
+        codebook_data = malloc(K * vlen);
         for (int k = 0; k < K; k++)
             for (int i = 0; i < vlen; i++)
                 codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
         printf("Codebook converted to uint8_t (size = %d bytes)\n", K * vlen);
 
-        uint8_t *reconstructed_lbg = malloc(WIDTH * HEIGHT);
+        reconstructed_lbg = malloc(WIDTH * HEIGHT);
         decompress_image(reconstructed_lbg, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, labels);
 
         FILE *flbg = fopen("lbg_decompress.txt", "w");
@@ -990,7 +1087,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         fclose(flbg);
 
         double td0 = MPI_Wtime();
-        uint8_t *labels_delta_u = malloc(num_vectors);
+        labels_delta_u = malloc(num_vectors);
         labels_delta_u[0] = labels[0];
         for (int i = 1; i < num_vectors; i++)
             labels_delta_u[i] = (uint8_t)(labels[i] - labels[i-1] + 128);
@@ -1014,7 +1111,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         printf("Header bytes        = %d\n", header_bytes);
 
         int original_labels = num_vectors;
-        int codebook_bytes  = K * vlen;
+        codebook_bytes  = K * vlen;
         double CR_huff_data  = (huff_data_bytes > 0)
                                ? (double)original_labels / (double)huff_data_bytes : 0.0;
         double CR_huff_total = (huff_total > 0)
@@ -1032,17 +1129,25 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         for (int i = 1; i < num_vectors; i++)
             labels[i] = labels[i-1] + ((int)labels_delta_u[i] - 128);
 
-        uint8_t *reconstructed = malloc(WIDTH * HEIGHT);
+        reconstructed = malloc(WIDTH * HEIGHT);
         decompress_image(reconstructed, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, labels);
 
-        double bf_t0 = MPI_Wtime();
-        uint8_t *reconstructed_filtered = malloc(WIDTH * HEIGHT);
+    }
+
+    /* [BFPAR] post-compression bilateral filter, distributed over all ranks */
+    double bf_t0 = MPI_Wtime();
+    if (rank != 0) reconstructed = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
+    if (rank == 0) {
+        reconstructed_filtered = malloc(WIDTH * HEIGHT);
         if (!reconstructed_filtered) { fprintf(stderr, "malloc reconstructed_filtered failed\n"); MPI_Abort(MPI_COMM_WORLD,1); }
-        bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
-                             BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
-        double bf_t1 = MPI_Wtime();
-        printf("[Bilateral-Post] d=%d sigmaColor=%.1f sigmaSpace=%.1f alpha=%.2f  done in %.6f s\n",
-               BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA, bf_t1 - bf_t0);
+    }
+    parallel_bilateral(reconstructed, reconstructed_filtered, rank, size, vec_counts, num_vectors);
+    double bf_t1 = MPI_Wtime();
+    if (rank != 0) free(reconstructed);
+
+    if (rank == 0) {
+        printf("[Bilateral-Post] d=%d sigmaColor=%.1f sigmaSpace=%.1f alpha=%.2f  done in %.6f s (parallel, np=%d)\n",
+               BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA, bf_t1 - bf_t0, size);
 
         FILE *file1 = fopen("decompress.txt", "w");
         for (size_t i = 0; i < (size_t)(WIDTH*HEIGHT); i++)
@@ -1219,10 +1324,13 @@ static int run_color_parallel(int argc, char *argv[], int rank, int size, const 
                     labels,       vec_counts, vec_displs, MPI_UINT8_T,
                     0, MPI_COMM_WORLD);
 
+        /* [BFPAR] hoisted so the rank-0 section can be split around the collective filter */
+        uint8_t *labels_delta_u = NULL, *reconstructed = NULL, *reconstructed_filtered = NULL;
+
         if (rank == 0) {
             printf("\n  [%s channel] LBG time=%.4fs  LBG iters=%d\n", channel_names[ch], lbg_time, lbg_iters);
 
-            uint8_t *labels_delta_u = (uint8_t*)malloc(num_vectors);
+            labels_delta_u = (uint8_t*)malloc(num_vectors);
             labels_delta_u[0] = labels[0];
             for (int i = 1; i < num_vectors; i++)
                 labels_delta_u[i] = (uint8_t)(labels[i] - labels[i-1] + 128);
@@ -1240,12 +1348,18 @@ static int run_color_parallel(int argc, char *argv[], int rank, int size, const 
             for (int i = 1; i < num_vectors; i++)
                 labels[i] = labels[i-1] + ((int)labels_delta_u[i] - 128);
 
-            uint8_t *reconstructed = (uint8_t*)malloc(channel_bytes);
+            reconstructed = (uint8_t*)malloc(channel_bytes);
             decompress_image(reconstructed, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, labels);
 
-            uint8_t *reconstructed_filtered = (uint8_t*)malloc(channel_bytes);
-            bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
-                                BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
+        }
+
+        /* [BFPAR] post-compression bilateral filter, distributed over all ranks */
+        if (rank != 0) reconstructed = (uint8_t *)malloc((size_t)channel_bytes);
+        if (rank == 0) reconstructed_filtered = (uint8_t*)malloc(channel_bytes);
+        parallel_bilateral(reconstructed, reconstructed_filtered, rank, size, vec_counts, num_vectors);
+        if (rank != 0) free(reconstructed);
+
+        if (rank == 0) {
 
             results[ch].mse  = compute_mse(channels[ch], reconstructed_filtered, channel_bytes);
             results[ch].psnr = compute_psnr(channels[ch], reconstructed_filtered, channel_bytes);

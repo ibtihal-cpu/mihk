@@ -125,10 +125,14 @@
 #define K2 0.03
 #define VLEN (BLOCK_SIZE * BLOCK_SIZE)   /* = 16 */
 
-#define BF_D            5
-#define BF_SIGMA_COLOR  20.0f
-#define BF_SIGMA_SPACE  20.0f
-#define BF_ALPHA        0.8f
+/* [V2] post-compression bilateral filter parameters, tuned by the train/test sweep on the thesis images
+   (tune: Lena, Boat, Chest X-ray, Brain MRI, PET Axial; test: the rest). Previous values (published pipeline):
+   d=5, sigma_color=20, sigma_space=20, alpha=0.8. alpha=0.4 is a deliberate compromise: it keeps most of the
+   PSNR/SSIM gain of the strongest setting (alpha=0.2) while smoothing less, which looked better to the eye. */
+#define BF_D            3
+#define BF_SIGMA_COLOR  80.0f
+#define BF_SIGMA_SPACE  5.0f
+#define BF_ALPHA        0.4f
 
 #define SEC(a,b) ((double)((b) - (a)) / CLOCKS_PER_SEC)
 

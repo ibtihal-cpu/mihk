@@ -125,10 +125,28 @@
 #define K2 0.03
 #define VLEN (BLOCK_SIZE * BLOCK_SIZE)   /* = 16 */
 
-#define BF_D            5
-#define BF_SIGMA_COLOR  20.0f
-#define BF_SIGMA_SPACE  20.0f
-#define BF_ALPHA        0.8f
+/* [V2] post-compression bilateral filter parameters, tuned by the train/test sweep on the thesis images
+   (tune: Lena, Boat, Chest X-ray, Brain MRI, PET Axial; test: the rest). Previous values (published pipeline):
+   d=5, sigma_color=20, sigma_space=20, alpha=0.8. alpha=0.4 is a deliberate compromise: it keeps most of the
+   PSNR/SSIM gain of the strongest setting (alpha=0.2) while smoothing less, which looked better to the eye. */
+#define BF_D            3
+#define BF_SIGMA_COLOR  80.0f
+#define BF_SIGMA_SPACE  5.0f
+#define BF_ALPHA        0.4f
+
+/* APPLY_FILTER=0 disables the post-compression filter (ablation): the
+   metrics are then computed on the plain reconstructed image. Default: on. */
+static void bilateral_preprocess(const uint8_t *src, uint8_t *dst,
+                                  int W, int H,
+                                  int d, float sigmaColor, float sigmaSpace,
+                                  float alpha);
+static void post_filter(const uint8_t *src, uint8_t *dst, int W, int H,
+                        int d, float sigmaColor, float sigmaSpace, float alpha)
+{
+    const char *e = getenv("APPLY_FILTER");
+    if (e && e[0] == '0') memcpy(dst, src, (size_t)W * (size_t)H);
+    else bilateral_preprocess(src, dst, W, H, d, sigmaColor, sigmaSpace, alpha);
+}
 
 #define SEC(a,b) ((double)((b) - (a)) / CLOCKS_PER_SEC)
 
@@ -365,15 +383,19 @@ static inline float distance16(const float *a, const float *b) {
 int lbg(const float *training, int num_vectors, int target_K,
          uint8_t *labels, float *codebook, int verbose)
 {
+    /* [V3] All accumulation (initial mean, per-cluster sums, distortion) is done in double. The training
+       vectors hold integers 0..255, so the sums are EXACT in double and independent of the summation
+       order; this makes the iteration count and the codebook identical to the MPI version for any np
+       (with float accumulation the order of the additions changed the number of iterations). */
     for (int j = 0; j < VLEN; j++) {
-        float s = 0.0f;
+        double s = 0.0;
         for (int i = 0; i < num_vectors; i++)
             s += training[i * VLEN + j];
-        codebook[0 * VLEN + j] = s / num_vectors;
+        codebook[0 * VLEN + j] = (float)(s / num_vectors);
     }
 
     int k = 1;
-    float *sum   = NULL;
+    double *sum  = NULL;
     int   *count = NULL;
     int allocated_k = 0;
     int total_iters = 0;
@@ -387,21 +409,21 @@ int lbg(const float *training, int num_vectors, int target_K,
         }
         k *= 2;
 
-        float prev_distortion = 1e30f;
+        double prev_distortion = 1e30;
         int iterations = 0;
-        float improvement = 1.0f;
-        float distortion = 0.0f;
+        double improvement = 1.0;
+        double distortion = 0.0;
 
         do {
             if (sum == NULL || allocated_k < k) {
                 free(sum); free(count);
-                sum   = (float*)calloc((size_t)k * VLEN, sizeof(float));
+                sum   = (double*)calloc((size_t)k * VLEN, sizeof(double));
                 count = (int*)calloc(k, sizeof(int));
                 allocated_k = k;
             }
-            memset(sum, 0, (size_t)k * VLEN * sizeof(float));
+            memset(sum, 0, (size_t)k * VLEN * sizeof(double));
             memset(count, 0, k * sizeof(int));
-            distortion = 0.0f;
+            distortion = 0.0;
 
             for (int i = 0; i < num_vectors; i++) {
                 float min_dist = 1e30f;
@@ -414,28 +436,27 @@ int lbg(const float *training, int num_vectors, int target_K,
                 labels[i] = (uint8_t)min_index;
                 distortion += min_dist;
                 count[min_index]++;
-                float *s = &sum[min_index * VLEN];
+                double *s = &sum[min_index * VLEN];
                 for (int j = 0; j < VLEN; j++) s[j] += v[j];
             }
 
             for (int c = 0; c < k; c++) {
                 if (count[c] > 0) {
-                    float inv = 1.0f / count[c];
-                    float *s = &sum[c * VLEN];
+                    double *s = &sum[c * VLEN];
                     for (int j = 0; j < VLEN; j++)
-                        codebook[c * VLEN + j] = s[j] * inv;
+                        codebook[c * VLEN + j] = (float)(s[j] / (double)count[c]);
                 }
             }
 
             distortion /= num_vectors;
-            improvement = fabs(prev_distortion - distortion) / (distortion + 1e-9f);
+            improvement = fabs(prev_distortion - distortion) / (distortion + 1e-9);
             prev_distortion = distortion;
             iterations++;
 
             if (verbose && iterations == 1)
                 printf("k=%3d iter=%3d distortion=%.4f  (first)\n", k, iterations, distortion);
 
-        } while (iterations < 100 && improvement > EPSILON);
+        } while (iterations < 100 && improvement > (double)EPSILON);
         total_iters += iterations;
 
         if (verbose)
@@ -851,7 +872,7 @@ static int run_grayscale(const char *image_path)
     double t_bf2_0 = wtime();
     uint8_t *reconstructed_filtered = malloc(WIDTH * HEIGHT);
     if (!reconstructed_filtered) { perror("malloc reconstructed_filtered"); return 1; }
-    bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
+    post_filter(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
                          BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
     double t_bf2_1 = wtime();
     printf("[Bilateral-Post] d=%d sigmaColor=%.1f sigmaSpace=%.1f alpha=%.2f done\n",
@@ -1025,7 +1046,7 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
 
     uint8_t *reconstructed_filtered = malloc(WIDTH * HEIGHT);
     if (!reconstructed_filtered) { fprintf(stderr, "malloc failed: reconstructed_filtered\n"); exit(EXIT_FAILURE); }
-    bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
+    post_filter(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
                          BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
 
     res.mse  = compute_mse(original_channel, reconstructed_filtered, WIDTH*HEIGHT);

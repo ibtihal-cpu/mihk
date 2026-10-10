@@ -15,9 +15,8 @@
  *
  *  Both modes run the SAME LBG splitting/Lloyd-iteration
  *  algorithm (build_training_vectors -> lbg -> decompress_image),
- *  the same delta+Huffman entropy coding on the labels, and the
- *  same post-compression bilateral filter, on the same 512x512
- *  block-4 codebook-64 setup. Color mode simply runs that whole
+ *  the same delta+Huffman entropy coding on the labels, on the
+ *  same 512x512 block-4 codebook-64 setup. Color mode simply runs that whole
  *  per-channel pipeline three times (R, then G, then B) and
  *  aggregates the results, exactly as seco.c did.
  *
@@ -99,7 +98,7 @@
  *      save_bmp_gray(), used by the grayscale path exactly as
  *      seg.c used its save_bmp().
  *
- *   5) Huffman / SSIM / bilateral_preprocess / build_training_vectors
+ *   5) Huffman / SSIM / build_training_vectors
  *      / distance16 / decompress_image / compute_mse / compute_psnr:
  *      byte-for-byte identical between seg.c and seco.c already
  *      (confirmed while reading both files function by function),
@@ -124,11 +123,6 @@
 #define K1 0.01
 #define K2 0.03
 #define VLEN (BLOCK_SIZE * BLOCK_SIZE)   /* = 16 */
-
-#define BF_D            5
-#define BF_SIGMA_COLOR  20.0f
-#define BF_SIGMA_SPACE  20.0f
-#define BF_ALPHA        0.8f
 
 #define SEC(a,b) ((double)((b) - (a)) / CLOCKS_PER_SEC)
 
@@ -228,53 +222,6 @@ void save_bmp_color(const char *filename, uint8_t *R, uint8_t *G, uint8_t *B,
     fclose(f);
 }
 
-static void bilateral_preprocess(const uint8_t *src, uint8_t *dst,
-                                  int W, int H,
-                                  int d, float sigmaColor, float sigmaSpace,
-                                  float alpha)
-{
-    int radius = d / 2;
-    int diam   = 2 * radius + 1;
-
-    float two_sc_sq = 2.0f * sigmaColor * sigmaColor;
-    float two_ss_sq = 2.0f * sigmaSpace * sigmaSpace;
-
-    float *gs = (float *)malloc((size_t)diam * diam * sizeof(float));
-    for (int i = -radius; i <= radius; i++)
-        for (int j = -radius; j <= radius; j++)
-            gs[(i + radius) * diam + (j + radius)] =
-                expf(-((float)(i * i + j * j)) / two_ss_sq);
-
-    for (int y = 0; y < H; y++) {
-        for (int x = 0; x < W; x++) {
-            float center = (float)src[y * W + x];
-            float sum  = 0.0f;
-            float wsum = 0.0f;
-
-            for (int i = -radius; i <= radius; i++) {
-                int yy = y + i;
-                if (yy < 0 || yy >= H) continue;
-                for (int j = -radius; j <= radius; j++) {
-                    int xx = x + j;
-                    if (xx < 0 || xx >= W) continue;
-                    float val  = (float)src[yy * W + xx];
-                    float diff = val - center;
-                    float gr   = expf(-(diff * diff) / two_sc_sq);
-                    float w    = gs[(i + radius) * diam + (j + radius)] * gr;
-                    sum  += w * val;
-                    wsum += w;
-                }
-            }
-            float bf = sum / wsum;
-            float blended = alpha * center + (1.0f - alpha) * bf;
-            if (blended < 0.0f)   blended = 0.0f;
-            if (blended > 255.0f) blended = 255.0f;
-            dst[y * W + x] = (uint8_t)(blended + 0.5f);
-        }
-    }
-    free(gs);
-}
-
 int build_training_vectors(uint8_t *image, uint8_t **training_set)
 {
     int num_blocks_x = WIDTH / BLOCK_SIZE;
@@ -365,15 +312,19 @@ static inline float distance16(const float *a, const float *b) {
 int lbg(const float *training, int num_vectors, int target_K,
          uint8_t *labels, float *codebook, int verbose)
 {
+    /* [V3] All accumulation (initial mean, per-cluster sums, distortion) is done in double. The training
+       vectors hold integers 0..255, so the sums are EXACT in double and independent of the summation
+       order; this makes the iteration count and the codebook identical to the MPI version for any np
+       (with float accumulation the order of the additions changed the number of iterations). */
     for (int j = 0; j < VLEN; j++) {
-        float s = 0.0f;
+        double s = 0.0;
         for (int i = 0; i < num_vectors; i++)
             s += training[i * VLEN + j];
-        codebook[0 * VLEN + j] = s / num_vectors;
+        codebook[0 * VLEN + j] = (float)(s / num_vectors);
     }
 
     int k = 1;
-    float *sum   = NULL;
+    double *sum  = NULL;
     int   *count = NULL;
     int allocated_k = 0;
     int total_iters = 0;
@@ -387,21 +338,21 @@ int lbg(const float *training, int num_vectors, int target_K,
         }
         k *= 2;
 
-        float prev_distortion = 1e30f;
+        double prev_distortion = 1e30;
         int iterations = 0;
-        float improvement = 1.0f;
-        float distortion = 0.0f;
+        double improvement = 1.0;
+        double distortion = 0.0;
 
         do {
             if (sum == NULL || allocated_k < k) {
                 free(sum); free(count);
-                sum   = (float*)calloc((size_t)k * VLEN, sizeof(float));
+                sum   = (double*)calloc((size_t)k * VLEN, sizeof(double));
                 count = (int*)calloc(k, sizeof(int));
                 allocated_k = k;
             }
-            memset(sum, 0, (size_t)k * VLEN * sizeof(float));
+            memset(sum, 0, (size_t)k * VLEN * sizeof(double));
             memset(count, 0, k * sizeof(int));
-            distortion = 0.0f;
+            distortion = 0.0;
 
             for (int i = 0; i < num_vectors; i++) {
                 float min_dist = 1e30f;
@@ -414,28 +365,27 @@ int lbg(const float *training, int num_vectors, int target_K,
                 labels[i] = (uint8_t)min_index;
                 distortion += min_dist;
                 count[min_index]++;
-                float *s = &sum[min_index * VLEN];
+                double *s = &sum[min_index * VLEN];
                 for (int j = 0; j < VLEN; j++) s[j] += v[j];
             }
 
             for (int c = 0; c < k; c++) {
                 if (count[c] > 0) {
-                    float inv = 1.0f / count[c];
-                    float *s = &sum[c * VLEN];
+                    double *s = &sum[c * VLEN];
                     for (int j = 0; j < VLEN; j++)
-                        codebook[c * VLEN + j] = s[j] * inv;
+                        codebook[c * VLEN + j] = (float)(s[j] / (double)count[c]);
                 }
             }
 
             distortion /= num_vectors;
-            improvement = fabs(prev_distortion - distortion) / (distortion + 1e-9f);
+            improvement = fabs(prev_distortion - distortion) / (distortion + 1e-9);
             prev_distortion = distortion;
             iterations++;
 
             if (verbose && iterations == 1)
                 printf("k=%3d iter=%3d distortion=%.4f  (first)\n", k, iterations, distortion);
 
-        } while (iterations < 100 && improvement > EPSILON);
+        } while (iterations < 100 && improvement > (double)EPSILON);
         total_iters += iterations;
 
         if (verbose)
@@ -758,10 +708,6 @@ static int run_grayscale(const char *image_path)
     }
     double t_read1 = wtime();
 
-    double t_bf0 = wtime();
-    double t_bf1 = wtime();
-    printf("[Bilateral] MOVED TO POST-COMPRESSION (lbgef variant)\n");
-
     double t_build0 = wtime();
     uint8_t *training_set = NULL;
     int num_vectors = build_training_vectors(image, &training_set);
@@ -848,22 +794,13 @@ static int run_grayscale(const char *image_path)
     decompress_image(reconstructed, WIDTH, HEIGHT, BLOCK_SIZE, codebook, labels);
     double t_rec1 = wtime();
 
-    double t_bf2_0 = wtime();
-    uint8_t *reconstructed_filtered = malloc(WIDTH * HEIGHT);
-    if (!reconstructed_filtered) { perror("malloc reconstructed_filtered"); return 1; }
-    bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
-                         BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
-    double t_bf2_1 = wtime();
-    printf("[Bilateral-Post] d=%d sigmaColor=%.1f sigmaSpace=%.1f alpha=%.2f done\n",
-           BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
-
     double t_mse0 = wtime();
-    double mse  = compute_mse(image, reconstructed_filtered, WIDTH*HEIGHT);
+    double mse  = compute_mse(image, reconstructed, WIDTH*HEIGHT);
     double t_mse1 = wtime();
     printf("MSE  = %.2f      (time %.4f s)\n", mse, t_mse1 - t_mse0);
 
     double t_psnr0 = wtime();
-    double psnr = compute_psnr(image, reconstructed_filtered, WIDTH*HEIGHT);
+    double psnr = compute_psnr(image, reconstructed, WIDTH*HEIGHT);
     double t_psnr1 = wtime();
     printf("PSNR = %.2f dB   (time %.4f s)\n", psnr, t_psnr1 - t_psnr0);
 
@@ -872,7 +809,7 @@ static int run_grayscale(const char *image_path)
     printf("Compression Ratio (CR): %.2f\n", CR);
 
     double t_s0 = wtime();
-    double ssim = SSIM_window_based(image, reconstructed_filtered, WIDTH, HEIGHT);
+    double ssim = SSIM_window_based(image, reconstructed, WIDTH, HEIGHT);
     double t_s1 = wtime();
     printf("SSIM = %.4f       (time %.4f s)\n", ssim, t_s1 - t_s0);
 
@@ -883,20 +820,18 @@ static int run_grayscale(const char *image_path)
 
     FILE *file1 = fopen("decompress.txt", "w");
     for (size_t i = 0; i < (size_t)WIDTH*HEIGHT; i++)
-        fprintf(file1, "%u\n", reconstructed_filtered[i]);
+        fprintf(file1, "%u\n", reconstructed[i]);
     fclose(file1);
 
     save_bmp_gray("original.bmp",            image,                  WIDTH, HEIGHT);
     save_bmp_gray("compressed_raw.bmp",      reconstructed,          WIDTH, HEIGHT);
-    save_bmp_gray("compressed_filtered.bmp", reconstructed_filtered, WIDTH, HEIGHT);
-    printf("Saved: original.bmp  compressed_raw.bmp  compressed_filtered.bmp\n");
+    printf("Saved: original.bmp  compressed_raw.bmp\n");
 
     /* [TIMERFIX] t_total1 moved here (after file writes) so grayscale "Total"
        now includes output-file writes, matching run_color() and pam.c's gray+color paths. */
     double t_total1 = wtime();
 
     double tt_read   = t_read1  - t_read0;
-    double tt_bf     = t_bf1    - t_bf0;
     double tt_build  = t_build1 - t_build0;
     double tt_lbg    = t_lbg1 - t_lbg0;
     double tt_lbg_cpu= SEC(t_lbg0_cpu, t_lbg1_cpu);
@@ -907,19 +842,17 @@ static int run_grayscale(const char *image_path)
     double tt_huff   = t_huff1  - t_huff0;
     double tt_dd     = t_dd1    - t_dd0;
     double tt_rec    = t_rec1   - t_rec0;
-    double tt_bf2    = t_bf2_1  - t_bf2_0;
     double tt_mse    = t_mse1   - t_mse0;
     double tt_psnr   = t_psnr1  - t_psnr0;
     double tt_ssim   = t_s1     - t_s0;
     double tt_total  = t_total1 - t_total0;
 
-    double tt_sum = tt_read + tt_bf + tt_build + tt_lbg + tt_ent + tt_cvt +
-                    tt_dec + tt_delta + tt_huff + tt_dd + tt_rec + tt_bf2 +
+    double tt_sum = tt_read + tt_build + tt_lbg + tt_ent + tt_cvt +
+                    tt_dec + tt_delta + tt_huff + tt_dd + tt_rec +
                     tt_mse + tt_psnr + tt_ssim;
 
     printf("\n==================== TIMING BREAKDOWN ====================\n");
     printf("  1) Read image            : %.4f s\n", tt_read);
-    printf("  2) Bilateral filter (pre): %.4f s  <- DISABLED (moved)\n", tt_bf);
     printf("  3) Build train vectors   : %.4f s\n", tt_build);
     printf("  4) LBG (wall time)       : %.4f s\n", tt_lbg);
     printf("  4) LBG (CPU  time)       : %.4f s\n", tt_lbg_cpu);
@@ -931,7 +864,6 @@ static int run_grayscale(const char *image_path)
     printf("  9) Huffman               : %.4f s\n", tt_huff);
     printf(" 10) Delta decode          : %.4f s\n", tt_dd);
     printf(" 11) Reconstruct           : %.4f s\n", tt_rec);
-    printf(" 11b) Bilateral filter(post): %.4f s\n", tt_bf2);
     printf(" 12) MSE                   : %.4f s\n", tt_mse);
     printf(" 12b) PSNR                 : %.4f s\n", tt_psnr);
     printf(" 13) SSIM                  : %.4f s\n", tt_ssim);
@@ -948,7 +880,6 @@ static int run_grayscale(const char *image_path)
     free(training_set);
     free(image);
     free(reconstructed);
-    free(reconstructed_filtered);
     free(reconstructed_lbg);
 
     return 0;
@@ -1023,17 +954,11 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
     if (!reconstructed) { fprintf(stderr, "malloc failed: reconstructed\n"); exit(EXIT_FAILURE); }
     decompress_image(reconstructed, WIDTH, HEIGHT, BLOCK_SIZE, codebook, labels);
 
-    uint8_t *reconstructed_filtered = malloc(WIDTH * HEIGHT);
-    if (!reconstructed_filtered) { fprintf(stderr, "malloc failed: reconstructed_filtered\n"); exit(EXIT_FAILURE); }
-    bilateral_preprocess(reconstructed, reconstructed_filtered, WIDTH, HEIGHT,
-                         BF_D, BF_SIGMA_COLOR, BF_SIGMA_SPACE, BF_ALPHA);
-
-    res.mse  = compute_mse(original_channel, reconstructed_filtered, WIDTH*HEIGHT);
-    res.psnr = compute_psnr(original_channel, reconstructed_filtered, WIDTH*HEIGHT);
-    res.ssim = SSIM_window_based(original_channel, reconstructed_filtered, WIDTH, HEIGHT);
+    res.mse  = compute_mse(original_channel, reconstructed, WIDTH*HEIGHT);
+    res.psnr = compute_psnr(original_channel, reconstructed, WIDTH*HEIGHT);
+    res.ssim = SSIM_window_based(original_channel, reconstructed, WIDTH, HEIGHT);
     res.original       = original_channel;
-    res.reconstructed  = reconstructed_filtered;
-    free(reconstructed);
+    res.reconstructed  = reconstructed;
 
     printf("PSNR=%.2f dB  SSIM=%.4f  CR(system)=%.2fX  LBG time=%.4fs  LBG iters=%d\n",
            res.psnr, res.ssim, res.cr_system, res.lbg_time, res.lbg_iters);
