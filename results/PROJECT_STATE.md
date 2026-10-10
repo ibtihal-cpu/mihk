@@ -20,7 +20,7 @@ run_param_study.sh, run_baselines.py (JPEG/JPEG2000 rate-matched, proposed value
 gray CR 23.50-28.88 (mean 25.92), PSNR 29.11-29.75 (29.49), SSIM 0.7624-0.8855 (0.8266); color CR 23.54-26.44 (24.47), PSNR 28.35-29.47 (28.80).
 LBG share of seq total: gray 75.4-78.9%, color 80.7-81.7%. LBG speedup P=14: gray 9.18, color 9.21 (eff. ~65.5-65.8%, KF ~0.040).
 Total speedup P=14: gray 5.00, color 6.84. Adaptive vs Equal (P>=8): LBG -28.3% (P=8) ... -17.2% (P=14); Total -17.9% ... -8.8% (all 8 images); P<=6 no difference.
-JPEG/JPEG2000 at same CR are +3.2 / +4.9... see tables_final.md (reference only; no claim of superiority).
+JPEG / JPEG2000 at the same CR (mean of 4 gray): PSNR 32.69 / 34.93 dB vs 29.49 dB proposed (+3.20 / +5.44 dB), SSIM 0.8687 / 0.8967 vs 0.8266 (reference only; no claim of superiority).
 
 ## PENDING (not done yet)
 1. Rebuild results/CH4_TABLES.docx and results/final_results.xlsx from results/final_campaign (they still contain OLD 12-image/filtered data — do not use).
