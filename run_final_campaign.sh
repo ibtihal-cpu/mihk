@@ -29,6 +29,15 @@ for f in $COLOR_IMGS; do [ "$(wc -w < "$f" 2>/dev/null)" = 786432 ] || { echo "A
 for s in sem_v3_nofilter.c pam_v4_nofilter.c run_correctness_nofilter.sh run_all.sh run_eq_ad_total.sh run_entropy.sh run_param_study.sh run_baselines.py run_memory.sh; do
   [ -f "$SRC_DIR/$s" ] || { echo "ABORT: $SRC_DIR/$s not found (git pull first)"; exit 1; }
 done
+# ---- tools and conditions, checked BEFORE the long run so it cannot fail half-way ----
+for c in gcc mpicc mpirun taskset bc python3; do command -v $c >/dev/null || { echo "ABORT: '$c' not found"; exit 1; }; done
+[ -x /usr/bin/time ] || { echo "ABORT: /usr/bin/time missing  ->  sudo apt install time"; exit 1; }
+python3 -c "import numpy; from PIL import features; assert features.check('jpg_2000')" 2>/dev/null \
+  || { echo "ABORT: python3 needs numpy and Pillow with JPEG 2000 support"; exit 1; }
+if [ -z "$SKIP_GUARD" ]; then
+  [ "$(cat /sys/class/power_supply/AC*/online 2>/dev/null | head -1)" = "1" ] || { echo "ABORT: AC charger not connected"; exit 1; }
+  [ "$(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | sort -u)" = "performance" ] || { echo "ABORT: governor is not performance  ->  sudo cpupower frequency-set -g performance"; exit 1; }
+fi
 echo "gray : $GRAY_IMGS"; echo "color: $COLOR_IMGS"
 echo "md5 : $(md5sum $SRC_DIR/sem_v3_nofilter.c $SRC_DIR/pam_v4_nofilter.c | tr '\n' ' ')"
 
