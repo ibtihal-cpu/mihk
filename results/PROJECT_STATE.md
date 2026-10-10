@@ -22,10 +22,14 @@ LBG share of seq total: gray 75.4-78.9%, color 80.7-81.7%. LBG speedup P=14: gra
 Total speedup P=14: gray 5.00, color 6.84. Adaptive vs Equal (P>=8): LBG -28.3% (P=8) ... -17.2% (P=14); Total -17.9% ... -8.8% (all 8 images); P<=6 no difference.
 JPEG / JPEG2000 at the same CR (mean of 4 gray): PSNR 32.69 / 34.93 dB vs 29.49 dB proposed (+3.20 / +5.44 dB), SSIM 0.8687 / 0.8967 vs 0.8266 (reference only; no claim of superiority).
 
+## Chapter 4 (new draft built from the final data)
+results/Chapter_4_final.docx (generator: results/generators/build_ch4_final.py, figures in results/figures_final/). Every number is computed from results/final_campaign/*.csv.
+Highlighted (yellow) placeholders to fill: Table 4.2 image sources, Figure 4.1 (Lena original/reconstructed, no filter), Section 4.9 (related studies, verify cited values first).
+Chapter 3 must define throughput (Section 3.6) because 4.5.3 cites it. The docx could not be rendered/visually checked here (LibreOffice failed to open any docx in the sandbox): open it in Word/OnlyOffice and check layout.
+
 ## PENDING (not done yet)
-1. Rebuild results/CH4_TABLES.docx and results/final_results.xlsx from results/final_campaign (they still contain OLD 12-image/filtered data — do not use).
-2. Chapter 4: rewrite per the section list (remove filter section, medical images, 12->8 images; fix table/figure numbering, 4.6 numbering gap,
-   Appendix A/C naming, summary 4.9; add Related-Studies/JPEG section, memory paragraph, throughput justification, Image sources table).
+1. results/CH4_TABLES.docx and results/final_results.xlsx still contain OLD 12-image/filtered data — do not use (superseded by Chapter_4_final.docx); rebuild the xlsx from results/final_campaign if needed.
+2. Chapter 4: review Chapter_4_final.docx, fill the highlighted placeholders (see above).
 3. Chapter 3: add double-precision sentence in 3.3, define throughput (Θ = N*I/T_LBG) and system CR in 3.6; flowchart arrow fixed (NO -> iteration block).
 4. Image sources (dataset/source names for the 8 images) — author must supply. Verify old peppers_color.txt vs peppers_color2.txt (cmp).
 5. Related-work table: re-verify every cited number against the original papers (Francisco et al. 2012 supports decoder-side post-processing only; filter is removed now, so it is background only).
