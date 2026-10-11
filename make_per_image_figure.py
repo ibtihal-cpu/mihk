@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Per-image summary: one row per test image = [thumbnail | CR bar | PSNR bar | LBG-speedup bar].
+"""Per-image summary: one row per test image = [thumbnail | one chart with three bars: CR, PSNR, LBG speedup (P = 14)].
 
 usage (from the repo root):
   python3 make_per_image_figure.py out.png results/final_campaign \
@@ -38,32 +38,25 @@ for key, label in ORDER:
     sp = [r for r in tim if r["image"] == key and r["np"] == "14"][0]["SpeedupLBG"]
     rows.append((key, label, float(cr), float(psnr), float(sp), key in ("lena_color", "peppers_color2", "f16_color", "goldhill_color")))
 
-BL, OR = "#2a76d9", "#d95f2b"
-plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False})
-fig, axs = plt.subplots(len(rows), 4, figsize=(8.2, 0.78 * len(rows) + 0.7), gridspec_kw={"width_ratios": [1.15, 3, 3, 3]})
-heads = ["Image", "Compression ratio", "PSNR (dB)", "LBG speedup (P = 14)"]
-xmax = [34, 36, 11.5]
+COLS = {"CR": "#2a76d9", "PSNR (dB)": "#e08a1e", "Speedup (P = 14)": "#2f9e6b"}
+plt.rcParams.update({"font.size": 8.5, "axes.spines.top": False, "axes.spines.right": False})
+n = len(rows)
+fig, axs = plt.subplots(n, 2, figsize=(6.4, 1.08 * n + 0.5), gridspec_kw={"width_ratios": [1, 3.4]})
 for r, (key, label, cr, psnr, sp, color) in enumerate(rows):
-    a = axs[r][0]; a.set_xticks([]); a.set_yticks([])
-    for s in a.spines.values():
-        s.set_visible(False)
+    a = axs[r][0]; a.set_xticks([]); a.set_yticks([]); a.set_frame_on(False)
     img = load(key)
     if img is not None:
         a.imshow(img, cmap=None if img.ndim == 3 else "gray", vmin=0, vmax=255)
-    a.set_ylabel(label, rotation=0, ha="right", va="center", fontsize=8.5, labelpad=4)
-    a.set_frame_on(False)
-    for c, (v, fmt) in enumerate(((cr, "{:.2f}"), (psnr, "{:.2f}"), (sp, "{:.2f}")), start=1):
-        b = axs[r][c]
-        b.barh([0], [v], color=OR if color else BL, height=0.62)
-        b.set_xlim(0, xmax[c - 1]); b.set_ylim(-0.5, 0.5); b.set_yticks([])
-        b.text(v + xmax[c - 1] * 0.015, 0, fmt.format(v), va="center", fontsize=8)
-        b.spines["bottom"].set_visible(r == len(rows) - 1)
-        if r != len(rows) - 1:
-            b.set_xticks([])
-        b.grid(axis="x", color="#e5e4e0", linewidth=0.6); b.set_axisbelow(True)
-for c in range(1, 4):
-    axs[0][c].set_title(heads[c], fontsize=9, pad=6)
-h = [plt.Rectangle((0, 0), 1, 1, color=BL), plt.Rectangle((0, 0), 1, 1, color=OR)]
-fig.legend(h, ["Grayscale", "Color"], loc="lower center", ncol=2, frameon=False, fontsize=8.5, bbox_to_anchor=(0.6, -0.005))
-fig.tight_layout(rect=(0, 0.03, 1, 1), h_pad=0.25)
+    a.set_title(label, fontsize=8.5, pad=2)
+    b = axs[r][1]
+    vals = [cr, psnr, sp]
+    b.barh(range(3), vals, color=list(COLS.values()), height=0.7)
+    b.set_yticks(range(3)); b.set_yticklabels(list(COLS.keys()), fontsize=7.5); b.invert_yaxis()
+    b.set_xlim(0, 36)
+    for i, v in enumerate(vals):
+        b.text(v + 0.5, i, "{:.2f}".format(v), va="center", fontsize=7.5)
+    b.grid(axis="x", color="#e5e4e0", linewidth=0.6); b.set_axisbelow(True)
+    if r != n - 1:
+        b.set_xticklabels([])
+fig.tight_layout(h_pad=0.4)
 fig.savefig(out, dpi=300); print("saved", out)
