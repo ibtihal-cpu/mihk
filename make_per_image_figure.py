@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Per-image summary: one row per test image = [thumbnail | one chart with three bars: CR, PSNR, LBG speedup (P = 14)].
 
-usage (from the repo root):
+usage (from the repo root; add --lollipop for line-and-dot style instead of bars):
   python3 make_per_image_figure.py out.png results/final_campaign \
       gray=/path/gray.txt boat_img=/path/boat_img.txt cameraman_img=/path/cameraman_img.txt peppers_img=/path/peppers_img.txt \
       lena_color=/path/lena_color.txt peppers_color2=/path/peppers_color2.txt f16_color=/path/f16_color.txt goldhill_color=/path/goldhill_color.txt
@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt
 if len(sys.argv) < 4:
     sys.exit(__doc__)
 out, res = sys.argv[1], sys.argv[2]
-paths = dict(a.split("=", 1) for a in sys.argv[3:])
+LOLLI = "--lollipop" in sys.argv
+paths = dict(a.split("=", 1) for a in sys.argv[3:] if not a.startswith("--"))
 ORDER = [("gray", "Lena (gray)"), ("boat_img", "Boat"), ("cameraman_img", "Cameraman"), ("peppers_img", "Peppers (gray)"),
          ("lena_color", "Lena (color)"), ("peppers_color2", "Peppers (color)"), ("f16_color", "F16"), ("goldhill_color", "Gold Hill")]
 cor = list(csv.DictReader(open(os.path.join(res, "correctness.csv"))))
@@ -50,11 +51,15 @@ for r, (key, label, cr, psnr, sp, color) in enumerate(rows):
     a.set_title(label, fontsize=8.5, pad=2)
     b = axs[r][1]
     vals = [cr, psnr, sp]
-    b.barh(range(3), vals, color=list(COLS.values()), height=0.7)
+    if LOLLI:   # thin line from zero to a dot instead of a filled bar
+        for i, (v, c) in enumerate(zip(vals, COLS.values())):
+            b.hlines(i, 0, v, color=c, linewidth=2.2); b.plot([v], [i], "o", color=c, markersize=7, zorder=3)
+    else:
+        b.barh(range(3), vals, color=list(COLS.values()), height=0.7)
     b.set_yticks(range(3)); b.set_yticklabels(list(COLS.keys()), fontsize=7.5); b.invert_yaxis()
     b.set_xlim(0, 36)
     for i, v in enumerate(vals):
-        b.text(v + 0.5, i, "{:.2f}".format(v), va="center", fontsize=7.5)
+        b.text(v + (1.1 if LOLLI else 0.5), i, "{:.2f}".format(v), va="center", fontsize=7.5)
     b.grid(axis="x", color="#e5e4e0", linewidth=0.6); b.set_axisbelow(True)
     if r != n - 1:
         b.set_xticklabels([])
