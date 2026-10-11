@@ -38,7 +38,7 @@ def TABLE(head, rows, widths, bold_last=True):
     doc.add_paragraph()
 
 H("4.9 Comparison with Previous Studies")
-P("Previous studies have reduced the cost of image compression through algorithmic simplification, parallelization on GPUs and multicore processors, and workload balancing on heterogeneous platforms. Table 4.x lists representative studies on image compression and its acceleration, and Table 4.y lists studies on workload distribution on heterogeneous platforms. Because these studies differ in the compression algorithm, the images, the hardware platform, and the reported metrics, their published results are used to place the present work in context and not as a controlled comparison. Only values reported in the cited studies are given; none of them was re-measured here.")
+P("Previous studies have reduced the cost of image compression through algorithmic simplification, parallelization on GPUs and multicore processors, and workload balancing on heterogeneous platforms. Table 4.x lists representative studies on image compression and its acceleration, Table 4.y lists studies on MPI-based parallel clustering, which is the closest parallel counterpart of the LBG training loop, and Table 4.z lists studies on workload distribution on heterogeneous platforms. Because these studies differ in the compression algorithm, the images, the hardware platform, and the reported metrics, their published results are used to place the present work in context and not as a controlled comparison. Only values reported in the cited studies are given; none of them was re-measured here.")
 
 CAP("Table 4.x. Comparison with studies on image compression and its acceleration.")
 TABLE(["Study", "Method", "Platform", "Computational performance", "Quality / compression", "Limitation"], [
@@ -53,7 +53,19 @@ TABLE(["Study", "Method", "Platform", "Computational performance", "Quality / co
     ["This work", "LBG + delta + Huffman; MPI; adaptive workload distribution", "MPI; 14-core hybrid CPU", "LBG speedup 9.19× at P = 14 (efficiency 65.7%); total-time speedup 5.00× (grayscale) and 6.84× (color)", "Grayscale: CR 25.92, PSNR 29.49 dB, SSIM 0.8266; color: CR 24.47, PSNR 28.80 dB, SSIM 0.7654 (means)", "One CPU platform; eight images"],
 ], [2.6, 3.0, 2.0, 3.2, 3.6, 2.6])
 
-CAP("Table 4.y. Comparison with studies on workload distribution on heterogeneous platforms.")
+CAP("Table 4.y. Comparison with studies on MPI-based parallel clustering (k-means), the closest parallel counterpart of LBG training.")
+TABLE(["Study", "Platform", "Reported speedup", "Efficiency (derived)", "Main finding", "Relation to this work"], [
+    ["Top et al. [R16], 2020", "MPI; HPC cluster, up to 128 cores", "About 104× clustering time (128 cores)", "About 81% (104 / 128)", "Parallel k-means for image segmentation with MPI; scalability up to 128 cores", "Same MPI scheme for an image-related clustering task; homogeneous cores"],
+    ["Tanović et al. [R17], 2024", "OpenMP and MPI; several computers", "Up to 10.2× (12 processor cores)", "About 85% (10.2 / 12), if 12 processes", "Parallel k-means for image classification; scheduling methods varied", "Similar number of cores; different data (MNIST variants)"],
+    ["Papakyriakou et al. [R18], 2025", "MPI; Raspberry Pi cluster, 2 to 48 processes", "Runtime reduced by almost 10× from 2 to 48 processes", "About 42% relative to 2 processes (10 / 24)", "Distance computation dominates; MPI_Allreduce synchronization stays manageable", "Same dominant stage and the same collective operation as in LBG training"],
+    ["Bhimani et al. [R19], 2015", "OpenMP, MPI, and CUDA; images 300 × 300 to 1164 × 1200", "About 30× for each of the three approaches", "Not derivable", "Best results with OpenMP for smaller images and with CUDA for larger ones", "Shows that OpenMP is competitive for image clustering on shared memory"],
+    ["Kwedlo and Czochanski [R20], 2019", "Hybrid MPI/OpenMP", "Strong scaling reported", "Not derivable", "Data divided evenly among MPI processes; hierarchical all-reduce for the centroid update", "Same equal data division as the Equal strategy of this work"],
+    ["This work", "MPI; 14-core hybrid CPU (6 P-cores, 8 E-cores)", "LBG: 9.19× at P = 14", "65.7% (9.19 / 14)", "Speed-weighted (Adaptive) distribution reduces the LBG time by 17.2% to 28.3% against equal distribution for P ≥ 8", "Heterogeneous cores; result identical to the sequential one"],
+], [2.6, 3.0, 2.8, 2.6, 3.6, 3.6])
+
+P("K-means clustering follows the same iterative structure as the LBG training used here: each vector is assigned to the nearest centroid, and the centroids are then recomputed from the sums of the assigned vectors. MPI implementations of k-means therefore parallelize the same dominant step, the distance computation [R18], and combine the partial sums with a collective reduction [R18, R20]. The efficiencies derived from the published speedups in Table 4.y range from about 42% (relative to two processes) to about 85%, and the efficiency of 65.7% obtained here for 14 processes on a hybrid processor lies within this range. These values are derived from the published speedups and the numbers of processes, and the studies differ in data, hardware, and the baseline used for the speedup, so they indicate the order of magnitude and not a ranking. The efficiencies of [R16] and [R17] refer to homogeneous cores, whereas the present result includes the efficiency loss caused by the efficiency cores of the processor. Studies that compare programming models for image clustering report that shared-memory parallelization with OpenMP can be as effective as MPI on a single machine [R19]; the MPI implementation of this work was chosen for its explicit data distribution and its portability to several nodes, and a comparison with an OpenMP implementation of LBG on the same processor was not performed.")
+
+CAP("Table 4.z. Comparison with studies on workload distribution on heterogeneous platforms.")
 TABLE(["Study", "Platform", "Strategy", "Reported finding", "Relation to this work"], [
     ["Zhong et al. [R9], 2011", "MPI; heterogeneous multicore", "Core speed measured dynamically while running only the computational kernel; data partitioned in proportion to the observed speed", "Dynamic, speed-proportional partitioning between cores", "Same principle as the speed calibration of the Adaptive strategy"],
     ["Lastovetsky et al. [R10], 2007", "Heterogeneous processors", "Speed modeled as a function of the problem size", "Partitioning with a functional performance model", "More general; this work uses one measured speed per process"],
@@ -84,7 +96,12 @@ for r in [
     "[R12] Bystrov O. et al., “Hybrid parallelization of discrete element software for heterogeneous resources,” Proc. Seventh Int. Conf. on Parallel, Distributed, GPU and Cloud Computing for Engineering, 2023.",
     "[R13] Żytko D. et al., “Analysis of performance and energy efficiency of processors with hybrid architecture,” Journal of Computer Sciences Institute, 2025.",
     "[R14] Velugoti N. et al., “Effects of hybrid CPU and cache architectures on parallel HPC and cloud applications,” 2026.",
-    "[R15] Galante G. et al., “To pin or not to pin: that is the question,” SSCAD 2025."]:
+    "[R15] Galante G. et al., “To pin or not to pin: that is the question,” SSCAD 2025.",
+    "[R16] Top A.E. et al., “Parallel k-means clustering with naive sharding using MPI for unsupervised image segmentation,” Mühendislik Bilimleri ve Tasarım Dergisi, 2020.",
+    "[R17] Tanović A. et al., “Implementation of parallel K-means algorithm for image classification using OpenMP and MPI libraries,” Zooming Innovation in Consumer Technologies Conference (ZINC), 2024.",
+    "[R18] Papakyriakou D. et al., “Parallel k-means benchmarking on a CPU-bound Beowulf cluster of Raspberry Pi nodes: an MPI-based scaling analysis,” International Journal of Computer Applications, 2025.",
+    "[R19] Bhimani J. et al., “Accelerating K-means clustering with parallel implementations and GPU computing,” IEEE High Performance Extreme Computing Conference (HPEC), 2015.",
+    "[R20] Kwedlo W., Czochanski P.J., “A hybrid MPI/OpenMP parallelization of K-means algorithms accelerated using the triangle inequality,” IEEE Access, 2019."]:
     p = doc.add_paragraph(r); p.paragraph_format.left_indent = Cm(0.8); p.paragraph_format.first_line_indent = Cm(-0.8)
     for run in p.runs: run.font.size = Pt(10.5)
 doc.save(OUT); print("saved", os.path.abspath(OUT))
