@@ -93,18 +93,21 @@ def band(ax, g, color, label, data, key, marker, ls):
     hi = [float(data[p]['mx']) for p in NPS]
     ax.fill_between(xs, lo, hi, color=color, alpha=0.18, linewidth=0)
     ax.plot(xs, ys, color=color, marker=marker, markersize=6, linewidth=1.8, linestyle=ls, label=label)
-def speed_fig(key, fname, ymax):
+def speed_fig(key, fname, ymax, single=False):
     fig, ax = plt.subplots(figsize=(5.6, 3.6))
     ax.axvspan(1.5, 6.5, color='#f0efec', alpha=0.9, linewidth=0)
     ax.plot([2, 14], [2, 14], color='#52514e', linestyle=':', linewidth=1.2, label='Ideal linear speedup')
-    band(ax, 'g', BLUE, 'Grayscale (mean, min–max)', S[(key, 'g')], 'speed', 'o', '-')
-    band(ax, 'c', ORANGE, 'Color (mean, min–max)', S[(key, 'c')], 'speed', 's', '--')
+    if single:
+        band(ax, 'a', BLUE, 'Measured, all 8 images (mean, min–max)', S[(key, 'a')], 'speed', 'o', '-')
+    else:
+        band(ax, 'g', BLUE, 'Grayscale (mean, min–max)', S[(key, 'g')], 'speed', 'o', '-')
+        band(ax, 'c', ORANGE, 'Color (mean, min–max)', S[(key, 'c')], 'speed', 's', '--')
     ax.set_xlabel('Number of MPI processes (P)'); ax.set_ylabel('Speedup'); ax.set_xticks([int(p) for p in NPS])
     ax.set_ylim(0, ymax); ax.set_xlim(1.5, 14.5)
     ax.text(2.0, ymax * 0.93, 'P-cores only (P ≤ 6)', fontsize=8, color='#52514e')
     ax.legend(frameon=False, loc='lower right', fontsize=8.5)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, fname)); plt.close(fig)
-speed_fig('LBG', 'fig_lbg_speedup.png', 15)
+speed_fig('LBG', 'fig_lbg_speedup.png', 15, single=True)
 speed_fig('TOT', 'fig_total_speedup.png', 15)
 # throughput
 fig, ax = plt.subplots(figsize=(5.6, 3.6)); xs = [int(p) for p in NPS]
@@ -328,7 +331,7 @@ table(HDR, [sprow('LBG', p) for p in NPS], size=9)
 a14, c14, all14 = S[('LBG', 'g')]['14'], S[('LBG', 'c')]['14'], S[('LBG', 'a')]['14']
 kfs = [D(S[('LBG', x)][p]['kf']) for x in 'gc' for p in NPS]
 body(f"Table 4.13 shows that the mean LBG speedup increased with every process count and reached {a14['m']} for the grayscale images and {c14['m']} for the color images at P = 14 (Figure 4.3). Across all eight images, the speedup at P = 14 ranged from {all14['mn']} to {all14['mx']}, so the scaling was very similar for the tested images. The parallel efficiency was {S[('LBG','g')]['6']['eff']}% (grayscale) and {S[('LBG','c')]['6']['eff']}% (color) at P = 6, decreased to {S[('LBG','g')]['8']['eff']}% and {S[('LBG','c')]['8']['eff']}% at P = 8, and reached {a14['eff']}% and {c14['eff']}% at P = 14. The decrease after P = 6 coincides with the transition from execution on the six P-cores to mixed P-core and E-core execution. The effect of this hardware heterogeneity and the role of adaptive workload distribution are examined in Section 4.6.")
-figure('fig_lbg_speedup.png', 5.2, 'Figure 4.3. Mean LBG speedup of the grayscale and color images compared with the ideal linear speedup. The shaded bands show the minimum-to-maximum range across the images of each group.')
+figure('fig_lbg_speedup.png', 5.2, 'Figure 4.3. Mean LBG speedup of the eight test images compared with the ideal linear speedup. The shaded band shows the minimum-to-maximum range across the images (at most 0.14× at P = 14).')
 kf8 = [D(S[('LBG', x)][p]['kf']) for x in 'gc' for p in ['8', '10', '12', '14']]
 body(f"The Karp–Flatt metric of the LBG stage ranged from {min(kfs)} to {max(kfs)}. It was lowest at P = 4 ({S[('LBG','g')]['4']['kf']} for grayscale and {S[('LBG','c')]['4']['kf']} for color) and P = 6, increased at P = 8, and remained between {min(kf8)} and {max(kf8)} from P = 8 to P = 14. Because the Karp–Flatt metric estimates an effective serial fraction, it reflects not only inherently sequential work but also parallel overhead and workload imbalance. On the heterogeneous processor used here, the values observed after P = 6 are therefore interpreted together with the transition to mixed P-core and E-core execution, and not as a direct measurement of the strictly sequential fraction.")
 H3('4.5.2 Total Execution Performance')
