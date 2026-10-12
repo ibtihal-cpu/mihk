@@ -1,0 +1,5 @@
+image,method,target_CR,CR,bpp,PSNR_dB,SSIM,delta
+gray,DWT+Huffman baseline (this work),23.50,23.19,0.345,26.83,0.7274,11.50
+boat_img,DWT+Huffman baseline (this work),26.54,26.65,0.300,26.05,0.7531,13.50
+cameraman_img,DWT+Huffman baseline (this work),28.88,28.84,0.277,26.56,0.7651,14.56
+peppers_img,DWT+Huffman baseline (this work),24.75,24.32,0.329,26.53,0.6696,11.50
