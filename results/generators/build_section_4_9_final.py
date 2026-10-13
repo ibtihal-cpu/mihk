@@ -55,12 +55,12 @@ para("Parallel performance was also compared with selected studies that applied 
 # ---------------- Table 4.17 ----------------
 para("Table 4.17. Contextual comparison of reported parallel speedups.", bold=True, size=11)
 rows2 = [
- ["Tanović et al. (2024)", "Parallel k-means for image classification (MNIST variants)", "12 processor cores, OpenMP and MPI", "Up to 10.2×"],
- ["Papakyriakou et al. (2025)", "MPI-based k-means clustering of 75 million synthetic 2D points", "2–48 MPI processes on a Raspberry Pi cluster", "≈10.05× relative to the two-process run (181.83 s to 18.09 s); efficiency 41.89% at 48 processesᵃ"],
- ["Bystrov et al. (2023)", "Discrete-element simulation with resource-aware weighted RCB partitioning", "Eight heterogeneous containers, OpenCL and MPI", "Up to 6.0×"],
- ["This work", "Parallel LBG-based image compression", "14 MPI processes mapped to 6 P-cores and 8 E-cores", "9.19× average LBG-stage speedup; 5.00× (grayscale) and 6.84× (color) total speedup at P = 14"],
+ ["Tanović et al. (2024)", "Parallel k-means for image classification (MNIST variants)", "12 processor cores, OpenMP and MPI", "Not stated in the abstract", "Up to 10.2×"],
+ ["Papakyriakou et al. (2025)", "MPI-based k-means clustering of 75 million synthetic 2D points", "2–48 MPI processes on a Raspberry Pi cluster", "Two-process run", "≈10.05× (181.83 s to 18.09 s); efficiency 41.89% at 48 processesᵃ"],
+ ["Bystrov et al. (2023)", "Discrete-element simulation with resource-aware weighted RCB partitioning", "Eight heterogeneous containers, OpenCL and MPI", "Not stated in the abstract", "Up to 6.0×"],
+ ["This work", "Parallel LBG-based image compression", "14 MPI processes mapped to 6 P-cores and 8 E-cores", "Sequential program", "9.19× average LBG-stage speedup; 5.00× (grayscale) and 6.84× (color) total speedup at P = 14"],
 ]
-table(["Study", "Application", "Computing resources", "Reported speedup"], rows2, [3.4, 5.2, 4.2, 4.0], bold_rows=(3,))
+table(["Study", "Application", "Computing resources", "Baseline", "Reported speedup"], rows2, [2.9, 4.0, 3.3, 2.4, 3.8], bold_rows=(3,), size=9.5)
 para("ᵃ Papakyriakou et al. used the two-process execution as the baseline (no sequential run); the speedup is computed from the total times as T2/T48, and the efficiency is relative to the same baseline. The studies differ in application, workload, hardware, process count, and speedup baseline; therefore, the values represent a contextual comparison rather than a direct performance ranking. The 9.19× value is the mean LBG-stage speedup over the eight test images; the total speedup includes the non-parallel stages.", italic=True, size=9.5)
 
 para("Bystrov et al. applied resource-aware weighted recursive coordinate bisection to distribute a discrete-element simulation across heterogeneous cloud resources. On seven heterogeneous containers, the weighted strategy reduced execution time by up to 32.6% compared with unweighted repartitioning. The implementation also achieved a maximum speedup of 6.0× when executed on eight heterogeneous containers. Although the application differs from image compression, its resource-aware partitioning is conceptually related to the adaptive workload-distribution strategy used in the present work, which reduced the LBG time by 17.2–28.3% relative to equal distribution at P = 8–14.")
