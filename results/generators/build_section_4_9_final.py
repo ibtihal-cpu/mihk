@@ -57,7 +57,7 @@ para("Table 4.17. Contextual comparison of reported parallel speedups.", bold=Tr
 rows2 = [
  ["Tanović et al. (2024)", "Parallel k-means for image classification (MNIST variants)", "12 processor cores, OpenMP and MPI", "Not stated in the abstract", "Up to 10.2×"],
  ["Papakyriakou et al. (2025)", "MPI-based k-means clustering of 75 million synthetic 2D points", "2–48 MPI processes on a Raspberry Pi cluster", "Two-process run", "≈10.05× (181.83 s to 18.09 s); efficiency 41.89% at 48 processesᵃ"],
- ["Bystrov et al. (2023)", "Discrete-element simulation with resource-aware weighted RCB partitioning", "Eight heterogeneous containers, OpenCL and MPI", "Not stated in the abstract", "Up to 6.0×"],
+ ["Bystrov et al. (2023)", "Discrete-element simulation with resource-aware weighted RCB partitioning", "Eight heterogeneous containers, OpenCL and MPI", "Sequential DEM implementation", "Up to 6.0×"],
  ["This work", "Parallel LBG-based image compression", "14 MPI processes mapped to 6 P-cores and 8 E-cores", "Sequential program", "9.19× average LBG-stage speedup; 5.00× (grayscale) and 6.84× (color) total speedup at P = 14"],
 ]
 table(["Study", "Application", "Computing resources", "Baseline", "Reported speedup"], rows2, [2.9, 4.0, 3.3, 2.4, 3.8], bold_rows=(3,), size=9.5)
