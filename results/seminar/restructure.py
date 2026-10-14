@@ -12,23 +12,23 @@ for k,(a,b) in enumerate(zip(marks,marks[1:]+[end])):
 AGENDA='''  // ================= 2. Outline =================
   {
     const s = cs("Agenda", "Outline",
-      "Nine parts, following the structure of the seminar: introduction, related work, problems, objectives, the proposed method, the parallel strategy, results, conclusion and references.");
-    const items = ["Introduction", "Related work", "Research problems", "Research objective", "Proposed method",
-      "Proposed parallel computing strategies", "Results and discussion", "Conclusion", "References"];
+      "Eight parts: introduction, literature review, problem statement, thesis objectives, proposed work, experimental results, conclusion and future work.");
+    const items = ["Introduction", "Literature Review", "Problem Statement", "Thesis Objectives", "Proposed work",
+      "Experimental Results", "Conclusion", "Future work"];
     items.forEach((it, i) => {
-      const col = i < 5 ? 0 : 1, row = i < 5 ? i : i - 5;
-      const x = 0.6 + col * 6.2, y = 1.6 + row * 1.02;
-      card(s, x, y, 5.9, 0.88, MIST, "Agenda card");
-      s.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.14, w: 0.6, h: 0.6, fill: { color: i % 2 ? MAG : PURPLE }, line: { color: WHITE, width: 0 }, objectName: "Number circle" });
-      T(s, String(i + 1), { x: x + 0.2, y: y + 0.14, w: 0.6, h: 0.6, fontSize: 20, bold: true, color: WHITE, align: "center", valign: "middle", fontFace: HF });
-      T(s, it, { x: x + 1.05, y: y + 0.04, w: 4.7, h: 0.8, fontSize: 19, bold: true, color: INK, valign: "middle" });
+      const col = i < 4 ? 0 : 1, row = i < 4 ? i : i - 4;
+      const x = 0.6 + col * 6.2, y = 1.75 + row * 1.2;
+      card(s, x, y, 5.9, 1.0, MIST, "Agenda card");
+      s.addShape(pres.shapes.DIAMOND, { x: x + 0.25, y: y + 0.28, w: 0.44, h: 0.44, fill: { color: GOLD }, line: { color: GOLD, width: 0 }, objectName: "Gold diamond" });
+      T(s, String(i + 1), { x: x + 0.78, y: y + 0.1, w: 0.5, h: 0.8, fontSize: 22, bold: true, color: i % 2 ? MAG : PURPLE, valign: "middle", fontFace: HF });
+      T(s, it, { x: x + 1.3, y: y + 0.1, w: 4.4, h: 0.8, fontSize: 22, bold: true, color: INK, valign: "middle" });
     });
   }
 '''
 
 PROB='''  // ================= Research problems =================
   {
-    const s = cs("Research problems", "Research problems",
+    const s = cs("Problem Statement", "Problem Statement",
       "Four problems motivate the work: delay in sending data, big data storage, the cost of obtaining a good compression ratio, and the need for acceptable quality.");
     const probs = [[ic.clock, "Delay in sending data", "Large images take a long time to transmit over a network.", PURPLE],
       [ic.db, "Big data storage", "Image collections need a large amount of storage.", MAG],
@@ -47,7 +47,7 @@ PROB='''  // ================= Research problems =================
 
 OBJ='''  // ================= Research objective =================
   {
-    const s = cs("Research objective", "Research objective",
+    const s = cs("Thesis Objectives", "Thesis Objectives",
       "Two objectives: a good compression ratio with parallel speed, and preserved quality. The right-hand column shows how the work meets each one.");
     const objs = [["Develop an image-compression method with a good compression ratio, using parallel processing to reduce its execution time.",
         "LBG vector quantization + delta + Huffman coding, parallelized with MPI (Equal and speed-aware Adaptive distribution)."],
@@ -71,20 +71,22 @@ OBJ='''  // ================= Research objective =================
 order=[1,'AG',3,4,5,6,7,'P','O',9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,35,36,37,38,39,40]
 tag={}
 for n in (3,4,5): tag[n]="1 · Introduction"
-for n in (6,7): tag[n]="2 · Related work"
-tag['P']="3 · Research problems"
-for n in ('O',9): tag[n]="4 · Research objective"
-for n in range(10,16): tag[n]="5 · Proposed method"
-for n in range(16,20): tag[n]="6 · Proposed parallel computing strategies"
-for n in list(range(20,33))+[34,35]: tag[n]="7 · Results and discussion"
-for n in (36,37,38): tag[n]="8 · Conclusion"
-tag[39]="9 · References"
+for n in (6,7): tag[n]="2 · Literature Review"
+tag['P']="3 · Problem Statement"
+for n in ('O',9): tag[n]="4 · Thesis Objectives"
+for n in range(10,20): tag[n]="5 · Proposed work"
+for n in list(range(20,33))+[34,35]: tag[n]="6 · Experimental Results"
+for n in (36,37): tag[n]="7 · Conclusion"
+tag[38]="8 · Future work"
+tag[39]="References"
 out=[head]
 for n in order:
     if n=='AG': b=AGENDA
     elif n=='P': b=PROB
     elif n=='O': b=OBJ
     else: b=blocks[n]
+    if n==6: b=b.replace('"Related work: image-compression studies"','"Literature review: image-compression studies"')
+    if n==7: b=b.replace('"Related work: parallel studies"','"Literature review: parallel studies"')
     if n in tag:
         b=re.sub(r'cs\("[^"]*",','cs("%s",'%tag[n],b,count=1)
     out.append(b)

@@ -98,16 +98,16 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
   // ================= 2. Outline =================
   {
     const s = cs("Agenda", "Outline",
-      "Nine parts, following the structure of the seminar: introduction, related work, problems, objectives, the proposed method, the parallel strategy, results, conclusion and references.");
-    const items = ["Introduction", "Related work", "Research problems", "Research objective", "Proposed method",
-      "Proposed parallel computing strategies", "Results and discussion", "Conclusion", "References"];
+      "Eight parts: introduction, literature review, problem statement, thesis objectives, proposed work, experimental results, conclusion and future work.");
+    const items = ["Introduction", "Literature Review", "Problem Statement", "Thesis Objectives", "Proposed work",
+      "Experimental Results", "Conclusion", "Future work"];
     items.forEach((it, i) => {
-      const col = i < 5 ? 0 : 1, row = i < 5 ? i : i - 5;
-      const x = 0.6 + col * 6.2, y = 1.6 + row * 1.02;
-      card(s, x, y, 5.9, 0.88, MIST, "Agenda card");
-      s.addShape(pres.shapes.OVAL, { x: x + 0.2, y: y + 0.14, w: 0.6, h: 0.6, fill: { color: i % 2 ? MAG : PURPLE }, line: { color: WHITE, width: 0 }, objectName: "Number circle" });
-      T(s, String(i + 1), { x: x + 0.2, y: y + 0.14, w: 0.6, h: 0.6, fontSize: 20, bold: true, color: WHITE, align: "center", valign: "middle", fontFace: HF });
-      T(s, it, { x: x + 1.05, y: y + 0.04, w: 4.7, h: 0.8, fontSize: 19, bold: true, color: INK, valign: "middle" });
+      const col = i < 4 ? 0 : 1, row = i < 4 ? i : i - 4;
+      const x = 0.6 + col * 6.2, y = 1.75 + row * 1.2;
+      card(s, x, y, 5.9, 1.0, MIST, "Agenda card");
+      s.addShape(pres.shapes.DIAMOND, { x: x + 0.25, y: y + 0.28, w: 0.44, h: 0.44, fill: { color: GOLD }, line: { color: GOLD, width: 0 }, objectName: "Gold diamond" });
+      T(s, String(i + 1), { x: x + 0.78, y: y + 0.1, w: 0.5, h: 0.8, fontSize: 22, bold: true, color: i % 2 ? MAG : PURPLE, valign: "middle", fontFace: HF });
+      T(s, it, { x: x + 1.3, y: y + 0.1, w: 4.4, h: 0.8, fontSize: 22, bold: true, color: INK, valign: "middle" });
     });
   }
 
@@ -173,7 +173,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 6. Related work: compression =================
   {
-    const s = cs("2 · Related work", "Related work: image-compression studies",
+    const s = cs("2 · Literature Review", "Literature review: image-compression studies",
       "These studies work at very different operating points: from near-lossless (CR about 1.5) to high compression. Values are taken from the papers' tables.");
     const h = { bold: true, color: WHITE, fill: { color: DEEP }, fontSize: 13, fontFace: BF, valign: "middle" };
     const c = (t, o = {}) => ({ text: t, options: Object.assign({ fontSize: 14, fontFace: BF, color: INK, valign: "middle" }, o) });
@@ -192,7 +192,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 7. Related work: parallel =================
   {
-    const s = cs("2 · Related work", "Related work: parallel studies",
+    const s = cs("2 · Literature Review", "Literature review: parallel studies",
       "Speedups come from different applications and baselines, so they are context, not a ranking. Papakyriakou uses the two-process run as baseline. Zangana's 9.09x is derived from the 1-GPU and 16-GPU times.");
     const h = { bold: true, color: WHITE, fill: { color: DEEP }, fontSize: 13, fontFace: BF, valign: "middle" };
     const c = (t, o = {}) => ({ text: t, options: Object.assign({ fontSize: 14, fontFace: BF, color: INK, valign: "middle" }, o) });
@@ -211,7 +211,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= Research problems =================
   {
-    const s = cs("3 · Research problems", "Research problems",
+    const s = cs("3 · Problem Statement", "Problem Statement",
       "Four problems motivate the work: delay in sending data, big data storage, the cost of obtaining a good compression ratio, and the need for acceptable quality.");
     const probs = [[ic.clock, "Delay in sending data", "Large images take a long time to transmit over a network.", PURPLE],
       [ic.db, "Big data storage", "Image collections need a large amount of storage.", MAG],
@@ -229,7 +229,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= Research objective =================
   {
-    const s = cs("4 · Research objective", "Research objective",
+    const s = cs("4 · Thesis Objectives", "Thesis Objectives",
       "Two objectives: a good compression ratio with parallel speed, and preserved quality. The right-hand column shows how the work meets each one.");
     const objs = [["Develop an image-compression method with a good compression ratio, using parallel processing to reduce its execution time.",
         "LBG vector quantization + delta + Huffman coding, parallelized with MPI (Equal and speed-aware Adaptive distribution)."],
@@ -252,7 +252,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 9. Contributions =================
   {
-    const s = cs("4 · Research objective", "What this work contributes",
+    const s = cs("4 · Thesis Objectives", "What this work contributes",
       "Four contributions: the pipeline, the parallel implementation, the Adaptive distribution for hybrid CPUs, and the measurement and verification methodology.");
     const cc = [[ic.layer, "Compression pipeline", "4×4 blocks → LBG (K = 64) → delta → Huffman; system CR counts every byte.", PURPLE],
       [ic.net, "MPI parallel LBG", "Scatterv + Allreduce SPMD design, exact and independent of process count.", MAG],
@@ -269,7 +269,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 10. Pipeline =================
   {
-    const s = cs("5 · Proposed method", "Compression pipeline",
+    const s = cs("5 · Proposed work", "Compression pipeline",
       "The image is split into 4x4 blocks, each block is a 16-dimensional vector. LBG builds a 64-vector codebook. Each block is replaced by an index, the index sequence is delta-coded and Huffman-coded.");
     const steps = [["Image", "512×512\n8-bit"], ["4×4 blocks", "16,384 vectors\n16-D"], ["LBG-VQ", "codebook K = 64"], ["Index map", "one label\nper block"], ["Delta coding", "offset 128"], ["Huffman", "entropy code"], ["Bitstream", "data + table\n+ codebook"]];
     const w = 1.62, gap = 0.13;
@@ -289,7 +289,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 11. Blocks and VQ (image) =================
   {
-    const s = cs("5 · Proposed method", "From pixels to 16-dimensional vectors",
+    const s = cs("5 · Proposed work", "From pixels to 16-dimensional vectors",
       "Zoom on a Cameraman region: the image is a grid of 4x4 blocks; each block becomes one vector and later one codeword index.");
     s.addImage({ path: A("cam_orig_zoom.png"), x: 0.6, y: 1.65, w: 4.6, h: 4.6, objectName: "Cameraman zoom" });
     // 4x4 block grid overlay: crop is 96 px -> 24 blocks across 4.6in => each block 0.1917in
@@ -312,7 +312,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 12. LBG algorithm =================
   {
-    const s = cs("5 · Proposed method", "LBG: splitting + Lloyd iterations",
+    const s = cs("5 · Proposed work", "LBG: splitting + Lloyd iterations",
       "Start from the global mean; split every codeword by a factor (1 plus or minus delta), then run Lloyd iterations until the relative distortion change is below epsilon. Repeat until K = 64.");
     const ks = ["1", "2", "4", "8", "16", "32", "64"];
     ks.forEach((k, i) => {
@@ -334,7 +334,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 13. Delta + Huffman (entropy chart) =================
   {
-    const s = cs("5 · Proposed method", "Delta coding lowers the entropy of the indices",
+    const s = cs("5 · Proposed work", "Delta coding lowers the entropy of the indices",
       "LBG orders codewords so that neighbouring blocks tend to have close indices; coding the difference between consecutive indices lowers the entropy. Huffman coding then reaches within about 0.04 bit of the entropy.");
     const lab = ["Lena", "Boat", "Cameraman", "Peppers"];
     chart(s, pres.charts.BAR, [{ name: "Entropy of indices", labels: lab, values: D.ent.map((e) => +e.H_index_bits) }, { name: "Entropy after delta", labels: lab, values: D.ent.map((e) => +e.H_delta_bits) }],
@@ -350,7 +350,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 14. System CR accounting =================
   {
-    const s = cs("5 · Proposed method", "System compression ratio: every byte counted",
+    const s = cs("5 · Proposed work", "System compression ratio: every byte counted",
       "The system CR divides the original bytes by codebook (1,024 bytes) + Huffman table + Huffman data. Delta + Huffman raises the ratio from 15.06 (8-bit indices) to 25.92 on average.");
     chart(s, pres.charts.BAR, [{ name: "System CR", labels: ["Fixed 8-bit indices", "Fixed 6-bit indices", "Delta + Huffman"], values: [15.06, 19.69, 25.92] }],
       { x: 0.6, y: 1.65, w: 6.9, h: 4.9, barDir: "col", chartColors: [LAV, PURPLE, MAG], showLegend: false, showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: "0.00", dataLabelFontSize: 14, dataLabelFontBold: true,
@@ -366,7 +366,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 15. Test images and protocol =================
   {
-    const s = cs("5 · Proposed method", "Test images",
+    const s = cs("5 · Proposed work", "Test images",
       "Eight 512x512 images: four grayscale (Lena, Boat, Cameraman, Peppers) and four color (Lena, Peppers, F-16, Gold Hill). Color images are processed per R, G, B channel. Thumbnails shown here are the images available for this deck.");
     const th = [["t_lena.png", "Lena"], ["t_cam.png", "Cameraman"], ["t_pep.png", "Peppers"], ["t_f16.png", "F-16"], ["t_gold.png", "Gold Hill"]];
     th.forEach((t, i) => {
@@ -384,7 +384,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 16. MPI design =================
   {
-    const s = cs("6 · Proposed parallel computing strategies", "MPI design: SPMD with one Allreduce per iteration",
+    const s = cs("5 · Proposed work", "MPI design: SPMD with one Allreduce per iteration",
       "Rank 0 reads the image and builds the vectors, then broadcasts parameters and scatters the vectors. Every iteration: assign locally, Allreduce the partial sums and counts, update the codebook. Finally the labels are gathered on rank 0 for delta and Huffman coding.");
     const boxes = [["Rank 0", "read image,\nbuild vectors", DEEP], ["Bcast + Scatterv", "parameters,\nvector blocks", PURPLE], ["Local assign", "nearest codeword,\npartial sums", MAG], ["Allreduce", "sums + counts\n(double)", TEAL], ["Update", "new codebook\non every rank", PURPLE], ["Gatherv", "labels to rank 0", DEEP]];
     const w = 1.85, gap = 0.2;
@@ -407,7 +407,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 17. Equal vs Adaptive =================
   {
-    const s = cs("6 · Proposed parallel computing strategies", "Equal vs Adaptive workload distribution",
+    const s = cs("5 · Proposed work", "Equal vs Adaptive workload distribution",
       "On a hybrid CPU, equal shares make P-cores wait for the slower E-cores at every Allreduce. Adaptive measures each rank's speed with a micro-benchmark and gives faster ranks more vectors, so all ranks finish together.");
     // schematic bars
     const draw = (x0, title, shares, colr) => {
@@ -431,7 +431,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 18. Platform and protocol =================
   {
-    const s = cs("6 · Proposed parallel computing strategies", "Platform and measurement protocol",
+    const s = cs("5 · Proposed work", "Platform and measurement protocol",
       "All timings are medians of five runs under identical conditions. The sequential reference program is pinned to one core, so speedup is relative to a separate sequential implementation.");
     stat(s, 0.6, 1.7, 3.9, "6 P + 8 E", "Intel Core i7-13650HX: 14 cores, hybrid", PURPLE);
     stat(s, 4.7, 1.7, 3.9, "P = 2 … 14", "MPI processes, Open MPI, one per core", MAG);
@@ -447,7 +447,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 19. Verification =================
   {
-    const s = cs("6 · Proposed parallel computing strategies", "Verification: parallel = sequential",
+    const s = cs("5 · Proposed work", "Verification: parallel = sequential",
       "For every image the sequential program and three parallel runs (P=4, P=14 Adaptive, P=14 Equal) give identical CR, MSE, PSNR, SSIM and iteration count, and the md5sum of the reconstructed BMP files is identical. md5sum is an external tool, not part of the algorithm. The check covers the reconstructed image and metrics, not the codebook or bitstream directly.");
     const g = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: DEEP }, fontSize: 13, align: "center", valign: "middle" } });
     const rows = [[g("Run"), g("Processes"), g("Strategy")],
@@ -463,7 +463,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 20. Parameter study =================
   {
-    const s = cs("7 · Results and discussion", "Parameter study: block size and codebook size",
+    const s = cs("6 · Experimental Results", "Parameter study: block size and codebook size",
       "Mean over the four grayscale images. Larger blocks and smaller codebooks give higher compression and lower quality. 4x4 with K=64 is the chosen balance.");
     const order = ["2x2/K64", "4x4/K128", "4x4/K64", "4x4/K32", "8x8/K64"];
     const lab = order.map((k) => k.replace("/", " "));
@@ -479,7 +479,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 21. Grayscale results =================
   {
-    const s = cs("7 · Results and discussion", "Grayscale results (4×4 blocks, K = 64)",
+    const s = cs("6 · Experimental Results", "Grayscale results (4×4 blocks, K = 64)",
       "Per-image system CR and PSNR for the four grayscale images; mean CR 25.92, PSNR 29.49 dB, SSIM 0.8266.");
     const g = D.corr.filter((r) => r.mode === "gray"); const lab = ["Lena", "Boat", "Cameraman", "Peppers"];
     chart(s, pres.charts.BAR, [{ name: "CR", labels: lab, values: g.map((r) => r.cr) }],
@@ -493,7 +493,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 22. Color results =================
   {
-    const s = cs("7 · Results and discussion", "Color results (R, G, B coded independently)",
+    const s = cs("6 · Experimental Results", "Color results (R, G, B coded independently)",
       "Per-image values for the four color images; mean CR 24.47, PSNR 28.80 dB, SSIM 0.7654. CR and MSE are pooled over the three channels; SSIM is the mean of the three channel SSIMs.");
     const g = D.corr.filter((r) => r.mode === "color"); const lab = ["Lena", "Peppers", "F-16", "Gold Hill"];
     chart(s, pres.charts.BAR, [{ name: "CR", labels: lab, values: g.map((r) => r.cr) }],
@@ -507,7 +507,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 23. Visual result =================
   {
-    const s = cs("7 · Results and discussion", "Visual result: Cameraman",
+    const s = cs("6 · Experimental Results", "Visual result: Cameraman",
       "Reconstruction by the sequential program: CR 28.88, MSE 68.84, PSNR 29.75 dB, SSIM 0.8855. The block structure of VQ is visible in the 4x zoom.");
     const imgs = [["cam_orig.png", "Original", 0.6], ["cam_rec.png", "Reconstructed (K = 64)", 4.83]];
     imgs.forEach((im) => { s.addImage({ path: A(im[0]), x: im[2], y: 1.65, w: 3.9, h: 3.9, objectName: im[1] }); T(s, im[1], { x: im[2], y: 5.6, w: 3.9, h: 0.35, fontSize: 14, bold: true, align: "center" }); });
@@ -524,7 +524,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 24. R-D vs baselines =================
   {
-    const s = cs("7 · Results and discussion", "Quality at matched compression ratio",
+    const s = cs("6 · Experimental Results", "Quality at matched compression ratio",
       "At approximately the same CR, JPEG 2000 and JPEG reach higher PSNR than the proposed VQ codec, while the generic DWT+Huffman baseline developed in this work is lower. The proposed codec is not a quality leader; its contribution is the parallel framework. The DWT baseline is a generic, controlled implementation, not a published method.");
     const imgs = ["gray", "boat_img", "cameraman_img", "peppers_img"], lab = ["Lena", "Boat", "Cameraman", "Peppers"];
     const get = (m) => imgs.map((im) => +D.base.find((b) => b.image === im && b.method === m).PSNR_dB);
@@ -542,7 +542,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 25. Sequential time breakdown (doughnut) =================
   {
-    const s = cs("7 · Results and discussion", "Where the sequential time goes",
+    const s = cs("6 · Experimental Results", "Where the sequential time goes",
       "In the sequential program LBG is 77% of the total time for grayscale and 81% for color. The remaining stages (I/O, delta, Huffman, reconstruction, metrics) are the part that does not scale.");
     const mk = (x, title, a, b) => {
       chart(s, pres.charts.DOUGHNUT, [{ name: title, labels: ["LBG training", "Other stages"], values: [a, b] }],
@@ -557,7 +557,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 26. LBG speedup =================
   {
-    const s = cs("7 · Results and discussion", "LBG speedup versus number of processes",
+    const s = cs("6 · Experimental Results", "LBG speedup versus number of processes",
       "Mean over the eight images. 9.19x at P=14, 65.7% efficiency. Speedup is almost linear up to P=6 (the P-cores) and then grows more slowly because E-cores are slower.");
     const ps = ["1", ...nps], sp = ["1", ...nps].map((p) => (p === "1" ? 1 : M[p].sl)), ideal = ps.map((p) => +p);
     chart(s, pres.charts.LINE, [{ name: "Ideal (S = P)", labels: ps, values: ideal }, { name: "Measured (mean of 8 images)", labels: ps, values: sp }],
@@ -571,7 +571,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 27. Efficiency + Karp-Flatt =================
   {
-    const s = cs("7 · Results and discussion", "Efficiency and the Karp–Flatt metric",
+    const s = cs("6 · Experimental Results", "Efficiency and the Karp–Flatt metric",
       "Efficiency = S/P. It falls after P=6 where E-cores join. The Karp-Flatt serial fraction of the LBG stage stays about 0.04 for P>=8, so there is no growing parallel overhead; the Total stage has about 0.14 (gray) and 0.08 (color) because of the non-parallel stages.");
     const eff = nps.map((p) => +(M[p].sl / +p * 100).toFixed(1));
     chart(s, pres.charts.BAR, [{ name: "Efficiency", labels: nps, values: eff }],
@@ -586,7 +586,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 28. Throughput =================
   {
-    const s = cs("7 · Results and discussion", "Throughput of the LBG stage",
+    const s = cs("6 · Experimental Results", "Throughput of the LBG stage",
       "Throughput = N*I/T_LBG in millions of vector-iterations per second (per channel for color). It grows from about 9.7-9.8 M/s sequentially to about 89-90 M/s at P=14, an increase of 9.2x.");
     const ps = ["seq", ...nps], lab = ["1", ...nps];
     chart(s, pres.charts.BAR, [{ name: "Grayscale", labels: lab, values: ps.map((p) => +D.thr.gray[p].toFixed(1)) }, { name: "Color (per channel)", labels: lab, values: ps.map((p) => +(D.thr.color[p] / 3).toFixed(1)) }],
@@ -600,7 +600,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 29. Total speedup =================
   {
-    const s = cs("7 · Results and discussion", "Total speedup: Amdahl in action",
+    const s = cs("6 · Experimental Results", "Total speedup: Amdahl in action",
       "Total speedup includes I/O, delta, Huffman, reconstruction and metrics, which stay on rank 0. At P=14 the total speedup is 5.00x for grayscale and 6.84x for color, much lower than the 9.19x of the LBG stage.");
     const ps = ["1", ...nps];
     chart(s, pres.charts.LINE, [{ name: "LBG stage (mean)", labels: ps, values: ps.map((p) => (p === "1" ? 1 : M[p].sl)) }, { name: "Total, color", labels: ps, values: ps.map((p) => (p === "1" ? 1 : C[p].st)) }, { name: "Total, grayscale", labels: ps, values: ps.map((p) => (p === "1" ? 1 : G[p].st)) }],
@@ -614,7 +614,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 30. Time breakdown P=1 vs 14 =================
   {
-    const s = cs("7 · Results and discussion", "Time breakdown: sequential vs P = 14",
+    const s = cs("6 · Experimental Results", "Time breakdown: sequential vs P = 14",
       "Mean stage times in seconds. At P=14 the LBG stage shrinks by 9.2x, but the other stages shrink only 2.0x (gray) and 3.2x (color), so their share of the total grows from 23% to 58% (gray) and from 19% to 40% (color).");
     const mk = (x, title, lab, lbg, oth) => {
       chart(s, pres.charts.BAR, [{ name: "LBG training", labels: lab, values: lbg }, { name: "Other stages", labels: lab, values: oth }],
@@ -628,7 +628,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 31. Equal vs Adaptive LBG time =================
   {
-    const s = cs("7 · Results and discussion", "Equal vs Adaptive: LBG execution time",
+    const s = cs("6 · Experimental Results", "Equal vs Adaptive: LBG execution time",
       "Mean LBG time in seconds. For P up to 6 the two strategies are equivalent (all ranks on P-cores). From P=8, when E-cores are used, Adaptive is clearly faster.");
     const mk = (x, mode, title) => {
       chart(s, pres.charts.BAR, [{ name: "Equal", labels: nps, values: nps.map((p) => +D.ea[mode][p].eq.toFixed(4)) }, { name: "Adaptive", labels: nps, values: nps.map((p) => +D.ea[mode][p].ad.toFixed(4)) }],
@@ -642,7 +642,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 32. Adaptive gain % =================
   {
-    const s = cs("7 · Results and discussion", "Adaptive gain over Equal distribution",
+    const s = cs("6 · Experimental Results", "Adaptive gain over Equal distribution",
       "Reduction of execution time with Adaptive relative to Equal, mean over the eight images (mean of per-image reductions). LBG: 28.3, 23.6, 19.8, 17.2 percent at P=8, 10, 12, 14. Total: 17.9, 13.7, 10.7, 8.8 percent.");
     const lbg = [-0.1, -0.2, -0.1, 28.3, 23.6, 19.8, 17.2], tot = [-0.3, -0.6, -0.6, 17.9, 13.7, 10.7, 8.8];
     chart(s, pres.charts.BAR, [{ name: "LBG time reduction (%)", labels: nps, values: lbg }, { name: "Total time reduction (%)", labels: nps, values: tot }],
@@ -656,7 +656,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 34. Compare with literature: compression =================
   {
-    const s = cs("7 · Results and discussion", "Comparison with reported studies: compression",
+    const s = cs("6 · Experimental Results", "Comparison with reported studies: compression",
       "A contextual comparison only. The studies operate at different compression ratios and use different images and size accounting; values are indicative. The time ratio is computed within each study: LBG/FLBG time in Bilal et al.; sequential/MPI LBG time at P=14 in this work.");
     const h = { bold: true, color: WHITE, fill: { color: DEEP }, fontSize: 13, align: "center", valign: "middle" };
     const c = (t, o = {}) => ({ text: t, options: Object.assign({ fontSize: 14, color: INK, align: "center", valign: "middle" }, o) });
@@ -677,7 +677,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 35. Compare with literature: parallel =================
   {
-    const s = cs("7 · Results and discussion", "Comparison with reported studies: parallel speedup",
+    const s = cs("6 · Experimental Results", "Comparison with reported studies: parallel speedup",
       "Contextual comparison. This work reports speedup against a separate sequential program. The 9.19x is the mean LBG-stage speedup over the eight images; the total speedup includes the non-parallel stages. The reported speedups are of the same order but are not a ranking.");
     const h = { bold: true, color: WHITE, fill: { color: DEEP }, fontSize: 13, valign: "middle" };
     const c = (t, o = {}) => ({ text: t, options: Object.assign({ fontSize: 14, color: INK, valign: "middle" }, o) });
@@ -695,7 +695,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 36. Limitations =================
   {
-    const s = cs("8 · Conclusion", "Limitations",
+    const s = cs("7 · Conclusion", "Limitations",
       "Be explicit about the limits: one CPU platform, a modest problem size, a non-parallel part, and quality below standard codecs at the same CR.");
     const L = [[ic.chip, "One platform", "A single hybrid CPU (i7-13650HX); results may differ on other CPUs."], [ic.img, "Small problem size", "512×512 images limit scalability at high P (≈ 1.5–2 ms per sequential iteration)."], [ic.layer, "Non-parallel stages", "I/O, delta, Huffman and reconstruction stay on rank 0: 58% of total time at P = 14 (gray)."], [ic.search, "Quality vs standards", "At matched CR, JPEG and JPEG 2000 reach higher PSNR than VQ with K = 64."]];
     L.forEach((l, i) => {
@@ -709,7 +709,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 37. Conclusion =================
   {
-    const s = cs("8 · Conclusion", "Conclusion",
+    const s = cs("7 · Conclusion", "Conclusion",
       "Summarize: the compressor, the exact parallelization, the speedup, the Adaptive gain, and the quality.");
     stat(s, 0.6, 1.7, 2.95, "25.92", "mean CR (gray), PSNR 29.5 dB", MAG);
     stat(s, 3.75, 1.7, 2.95, "9.19×", "LBG speedup at P = 14", PURPLE);
@@ -725,7 +725,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 38. Future work =================
   {
-    const s = cs("8 · Conclusion", "Future work",
+    const s = cs("8 · Future work", "Future work",
       "Natural extensions: parallelize the remaining stages, hybrid MPI+OpenMP, GPU, and entropy coding improvements.");
     const F = [[ic.layer, "Parallelize the remaining stages", "Delta, Huffman and reconstruction are 58% of total time at P = 14."], [ic.net, "Hybrid MPI + OpenMP", "Combine process- and thread-level parallelism on the hybrid CPU."], [ic.rocket, "GPU acceleration", "Offload the assignment step, the dominant kernel."], [ic.lock, "Better entropy coding", "Canonical Huffman and a 5-byte-per-symbol table accounting; larger images."]];
     F.forEach((f, i) => {
@@ -739,7 +739,7 @@ const M = D.timing.all, G = D.timing.gray, C = D.timing.color;
 
   // ================= 39. References =================
   {
-    const s = cs("9 · References", "References", "Core references used in the seminar.");
+    const s = cs("References", "References", "Core references used in the seminar.");
     const refs = [
       "H. M. Zangana (2025). Design and implementation of a novel parallel algorithm for efficient image compression in high-performance computing. EAI Endorsed Trans. AI and Robotics, 4.",
       "S. Thomas, A. Krishna, S. Govind, A. K. Sahu (2025). A novel image compression method using wavelet coefficients and Huffman coding. J. Eng. Res., 13, 361–370.",
