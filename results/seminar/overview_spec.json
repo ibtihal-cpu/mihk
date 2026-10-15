@@ -1,15 +1,15 @@
 {
- "title": "Proposed Method",
+ "title": "",
  "stages": [
   {
    "name": "Stage 1",
-   "sub": "Block Formation",
+   "sub": "Block\nFormation",
    "color": "2F6FB5",
    "light": "E3EEFA",
    "steps": [
     [
      "Input image",
-     "512×512, gray / color"
+     "512×512,\ngray / color"
     ],
     [
      "4×4 blocks",
@@ -17,13 +17,13 @@
     ],
     [
      "Training vectors",
-     "16-D, N = 16,384"
+     "16-D,\nN = 16,384"
     ]
    ]
   },
   {
    "name": "Stage 2",
-   "sub": "Parallel LBG Training (MPI)",
+   "sub": "Parallel LBG\nTraining (MPI)",
    "color": "E07B22",
    "light": "FDEBD9",
    "hl": true,
@@ -34,41 +34,41 @@
     ],
     [
      "Assign",
-     "nearest codeword on each rank"
+     "nearest codeword\non each rank"
     ],
     [
      "Combine",
-     "Allreduce:\nsums, counts, distortion"
+     "Allreduce: sums,\ncounts, distortion"
     ],
     [
      "Refine and split",
-     "per level, until K = 64"
+     "per level,\nuntil K = 64"
     ]
    ]
   },
   {
    "name": "Stage 3",
-   "sub": "Lossless Index Coding (Rank 0)",
+   "sub": "Lossless Index\nCoding (Rank 0)",
    "color": "2A9D8F",
    "light": "DDF3F0",
    "steps": [
     [
      "Delta coding",
-     "differences of VQ indices"
+     "differences of\nVQ indices"
     ],
     [
      "Huffman coding",
-     "variable-length codes"
+     "variable-length\ncodes"
     ],
     [
      "Compressed data",
-     "codebook + Huffman table\n+ coded indices"
+     "codebook + Huffman\ntable + coded indices"
     ]
    ]
   },
   {
    "name": "Stage 4",
-   "sub": "Decoding and Evaluation",
+   "sub": "Decoding and\nEvaluation",
    "color": "6B4FA3",
    "light": "ECE6F6",
    "steps": [
@@ -78,15 +78,15 @@
     ],
     [
      "Inverse delta",
-     "recover VQ indices"
+     "recover\nVQ indices"
     ],
     [
      "Reconstruction",
-     "codebook lookup"
+     "codebook\nlookup"
     ],
     [
      "Metrics",
-     "CR, BPP, MSE, PSNR;\nparallel SSIM"
+     "CR, BPP, MSE,\nPSNR; parallel SSIM"
     ]
    ]
   }
@@ -94,7 +94,7 @@
  "footer": "Parallel: LBG training and SSIM   |   Rank 0: index coding, decoding, reconstruction, and remaining metrics",
  "between": [
   "16,384 training vectors (16-D)",
-  "codebook C (64 codewords) + index array L (gathered on Rank 0)",
+  "codebook C + index array L (gathered on Rank 0)",
   "compressed data: codebook + Huffman table + coded indices"
  ]
 }
