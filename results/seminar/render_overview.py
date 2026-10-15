@@ -18,8 +18,8 @@ for i,st in enumerate(spec["stages"]):
     for j,t in enumerate(st["steps"]):
         x=bx0+j*(bw+arrow)
         ax.add_patch(FancyBboxPatch((x,y+0.1),bw,rowH-0.2,boxstyle="round,pad=0,rounding_size=0.08",fc="white",ec=c(st["color"]),lw=1.5))
-        ax.text(x+bw/2,y+rowH/2-0.14,f"{j+1}. {t[0]}",ha="center",va="center",color=c(st["color"]),fontsize=11.5,fontweight="bold")
-        ax.text(x+bw/2,y+rowH/2+0.22,t[1],ha="center",va="center",color="#1F1A33",fontsize=8.5)
+        ax.text(x+bw/2,y+rowH/2-0.25,f"{j+1}. {t[0]}",ha="center",va="center",color=c(st["color"]),fontsize=11.5,fontweight="bold")
+        ax.text(x+bw/2,y+rowH/2+0.12,t[1],ha="center",va="center",color="#1F1A33",fontsize=8.5,linespacing=1.3)
         if j<len(st["steps"])-1:
             ax.add_patch(FancyArrow(x+bw+0.05,y+rowH/2,arrow-0.1,0,width=0.12,head_width=0.26,head_length=0.15,length_includes_head=True,color="#1F1A33"))
     if st.get("loop"):

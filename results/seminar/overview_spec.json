@@ -38,17 +38,17 @@
     ],
     [
      "Combine",
-     "Allreduce of sums and counts"
+     "Allreduce:\nsums, counts, distortion"
     ],
     [
-     "Update, repeat",
-     "until converged (K = 64)"
+     "Refine and split",
+     "per level, until K = 64"
     ]
    ]
   },
   {
    "name": "Stage 3",
-   "sub": "Entropy Coding (Rank 0)",
+   "sub": "Lossless Index Coding (Rank 0)",
    "color": "2A9D8F",
    "light": "DDF3F0",
    "steps": [
@@ -62,7 +62,7 @@
     ],
     [
      "Compressed data",
-     "codebook + table + bitstream"
+     "codebook + Huffman table\n+ coded indices"
     ]
    ]
   },
@@ -86,15 +86,15 @@
     ],
     [
      "Metrics",
-     "CR, PSNR, SSIM (parallel)"
+     "CR, BPP, MSE, PSNR;\nparallel SSIM"
     ]
    ]
   }
  ],
- "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding and reconstruction",
+ "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding, reconstruction, and remaining metrics",
  "between": [
   "16,384 training vectors (16-D)",
   "codebook C (64 codewords) + index array L (gathered on Rank 0)",
-  "compressed data: codebook + Huffman table + bitstream"
+  "compressed data: codebook + Huffman table + coded indices"
  ]
 }
