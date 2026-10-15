@@ -29,19 +29,20 @@ const data = {
   gray: [["Lena", "29.67", "0.8190"], ["Boat", "29.11", "0.8394"], ["Cameraman", "29.75", "0.8855"], ["Peppers", "29.41", "0.7624"]],
   color: [["Lena", "28.91", "0.7594"], ["Peppers", "28.35", "0.6964"], ["F16", "29.47", "0.8539"], ["Gold Hill", "28.45", "0.7520"]]
 };
-function pairSlide(kind, i0) {
-  const label = kind === "gray" ? "Grayscale" : "Color";
-  const s = p.addSlide(); header(s, "Results", `Original vs Reconstructed: ${label}`, TEAL);
-  [0, 1].forEach(k => {
-    const [nm, psnr, ssim] = data[kind][i0 + k];
-    const x0 = 0.5 + k * 6.3, y = 1.5, sz = 2.95;
-    frame(s, x0, y, sz, sz, "Original");
-    frame(s, x0 + sz + 0.1, y, sz, sz, "Reconstructed");
-    s.addText(nm, { x: x0, y: y + sz + 0.12, w: 2 * sz + 0.1, h: 0.4, align: "center", fontFace: "Calibri", fontSize: 20, bold: true, color: DEEP, margin: 0 });
-    s.addText([{ text: "CR = ___", options: { color: MAG, bold: true } }, { text: `   |   PSNR = ${psnr} dB   |   SSIM = ${ssim}`, options: { color: INK } }],
-      { x: x0, y: y + sz + 0.55, w: 2 * sz + 0.1, h: 0.4, align: "center", fontFace: "Calibri", fontSize: 16, margin: 0 });
+function gridSlide(kind) {
+  const label = kind === "gray" ? "Grayscale Images" : "Color Images";
+  const s = p.addSlide(); header(s, "Results", `Reconstruction Results: ${label}`, TEAL);
+  const sz = 2.55, x0 = 1.75, gx = 0.15, yO = 1.55, yR = 4.2;
+  s.addText("Original", { x: 0.45, y: yO, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 15, bold: true, color: DEEP, margin: 0 });
+  s.addText("Reconstructed", { x: 0.45, y: yR, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 15, bold: true, color: DEEP, margin: 0 });
+  data[kind].forEach(([nm, psnr, ssim], c) => {
+    const x = x0 + c * (sz + gx);
+    s.addText(nm, { x, y: 1.18, w: sz, h: 0.33, align: "center", fontFace: "Calibri", fontSize: 17, bold: true, color: TEAL, margin: 0 });
+    frame(s, x, yO, sz, sz, "Original");
+    frame(s, x, yR, sz, sz, "Reconstructed");
+    s.addText([{ text: "CR = ___", options: { color: MAG, bold: true, breakLine: true } }, { text: `PSNR ${psnr} dB   SSIM ${ssim}`, options: { color: INK } }],
+      { x: x - 0.1, y: yR + sz + 0.03, w: sz + 0.2, h: 0.5, align: "center", fontFace: "Calibri", fontSize: 13, margin: 0 });
   });
-  s.addText("Block size 4 × 4, K = 64. Same reconstruction for the sequential and parallel runs.", { x: 0.5, y: 6.75, w: 12.33, h: 0.35, align: "center", fontFace: "Calibri", fontSize: 13, italic: true, color: PURPLE, margin: 0 });
 }
-pairSlide("gray", 0); pairSlide("gray", 2); pairSlide("color", 0); pairSlide("color", 2);
+gridSlide("gray"); gridSlide("color");
 p.writeFile({ fileName: "figs/results_images.pptx" }).then(() => console.log("ok"));
