@@ -68,16 +68,16 @@ module.exports.make = function (p) {
 
     // 6 related work 1
     s = p.addSlide(); hdr(s, "Literature Review", "Related Work: Compression Quality", PURPLE, 2.6);
-    const rows = [[H("Ref.", PURPLE), H("Image", PURPLE), H("Study", PURPLE), H("CR", PURPLE), H("PSNR (dB)", PURPLE), H("Time ratio", PURPLE)]];
+    const rows = [[H("Ref.", PURPLE), H("Image", PURPLE), H("Study", PURPLE), H("CR", PURPLE), H("PSNR (dB)", PURPLE)]];
     const W = "FFFFFF", L = "F1ECF9";
-    const add = (a, f) => rows.push([C(a[0], f), C(a[1], f, { bold: true }), C(a[2], f, { align: "left", bold: !!a[6] }), a[3] === "___" ? BL("___", f) : C(a[3], f), C(a[4], f), C(a[5], f)]);
+    const add = (a, f) => rows.push([C(a[0], f), C(a[1], f, { bold: true }), C(a[2], f, { align: "left", bold: !!a[6] }), a[3] === "___" ? BL("___", f) : C(a[3], f), C(a[4], f)]);
     [["[6]", "Lena", "Thomas et al.", "1.52", "54.28", "–"], ["[16]", "", "Ranjan and Kumar", "4.41", "34.78", "–"], ["", "", "This work", "___", "29.67", "9.21×", 1],
      ["[6]", "Boat", "Thomas et al.", "1.41", "54.07", "–"], ["", "", "This work", "___", "29.11", "9.22×", 1],
      ["[17]", "Cameraman", "Bilal et al.", "–", "25.3–26.8*", "2.61×"], ["", "", "This work", "___", "29.75", "9.10×", 1]].forEach((a, i) => add(a, a[6] ? L : W));
-    s.addTable(rows, { x: 0.7, y: 1.35, w: 11.9, colW: [1.0, 1.8, 3.4, 1.5, 2.2, 2.0], rowH: 0.5, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
-    s.addText("* Bilal et al.: PSNR range at bit rates up to 0.625 bpp; time ratio = LBG / FLBG training time (single core). This work: time ratio = sequential / parallel LBG time at P = 14. Thomas et al. is near-lossless (CR ≈ 1.5).",
+    s.addTable(rows, { x: 0.7, y: 1.35, w: 11.9, colW: [1.2, 2.2, 4.2, 2.0, 2.3], rowH: 0.5, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
+    s.addText("* Bilal et al.: PSNR range at bit rates up to 0.625 bpp (CR not reported). Thomas et al. is a near-lossless scheme (CR ≈ 1.5).",
       { x: 0.7, y: 5.55, w: 11.9, h: 0.8, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
-    s.addText("Higher compression ratio at an acceptable PSNR, with a faster training stage.", { x: 0.7, y: 6.4, w: 11.9, h: 0.6, fontFace: "Cambria", fontSize: 18, bold: true, color: DEEP, margin: 0 });
+    s.addText("The proposed method provides substantially higher compression than the near-lossless method, with lower reconstruction fidelity.", { x: 0.7, y: 6.4, w: 11.9, h: 0.6, fontFace: "Cambria", fontSize: 18, bold: true, color: DEEP, margin: 0 });
     // 7 related work 2
     s = p.addSlide(); hdr(s, "Literature Review", "Related Work: Parallel Speedup", PURPLE, 2.6);
     const r2 = [[H("Study", PURPLE), H("Application", PURPLE), H("Resources", PURPLE), H("Baseline", PURPLE), H("Speedup", PURPLE)]];
@@ -117,7 +117,7 @@ module.exports.make = function (p) {
     let s = p.addSlide(); hdr(s, "Experimental Results", "Experimental Setup", TEAL, 3.3);
     const cards = [["Hardware", "Intel Core i7-13650HX: 6 P-cores and 8 E-cores (14 cores in total).", PURPLE], ["Software", "Ubuntu 24.04, GCC 13.3 (-O2), Open MPI 4.1.6, written in C.", ORG],
       ["Protocol", "Median of 5 runs; governor set to performance; processes bound to cores, P-cores first.", TEAL], ["Data", "8 standard 512 × 512 images: 4 grayscale and 4 color.", MAG],
-      ["LBG settings", "4 × 4 blocks, K = 64 codewords, δ = 0.01, convergence threshold ε, at most 100 iterations per level.", DEEP], ["Strategies", "Equal (default for P ≤ 4) and Adaptive speed-aware (P > 4).", GOLD]];
+      ["LBG settings", "4 × 4 blocks, K = 64 codewords, δ = 0.01, ε = 10⁻⁴ (relative improvement in distortion), at most 100 iterations per level.", DEEP], ["Strategies", "Equal (default for P ≤ 4) and Adaptive speed-aware (P > 4).", GOLD]];
     cards.forEach((c, i) => card(s, 0.7 + (i % 2) * 6.05, 1.45 + Math.floor(i / 2) * 1.8, 5.9, 1.6, c[2], c[0], c[1], 20, 15));
     // metrics
     s = p.addSlide(); hdr(s, "Experimental Results", "Evaluation Metrics", TEAL, 3.3);
@@ -126,7 +126,7 @@ module.exports.make = function (p) {
       ["MSE", "mean (I − Î)²", "Efficiency", "E = S / P"], ["PSNR", "10·log10(255² / MSE)  dB", "Throughput", "I_size / T_total  (MiB/s)"], ["SSIM", "11 × 11 Gaussian window, σ = 1.5", "Karp–Flatt", "e = (1/S − 1/P) / (1 − 1/P)"]];
     const body = mrows.slice(1).map((r, i) => { const f = i % 2 ? "FFFFFF" : "EEF8F6"; return [C(r[0], f, { bold: true, color: TEAL, fontSize: 15 }), C(r[1], f, { fontSize: 14 }), C(r[2], i % 2 ? "FFFFFF" : "FDF1E6", { bold: true, color: ORG, fontSize: 15 }), C(r[3], i % 2 ? "FFFFFF" : "FDF1E6", { fontSize: 14 })]; });
     s.addTable([mrows[0]].concat(body), { x: 0.7, y: 1.45, w: 11.95, colW: [1.6, 4.4, 2.1, 3.85], rowH: 0.62, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
-    s.addText("S_comp = codebook (K × 16 bytes) + Huffman table + Huffman-coded data. The table is accounted as 5 bytes per used symbol (1 byte symbol + 4 bytes frequency) plus 10 bytes of fixed metadata. For color images, MSE and PSNR are computed over RGB and SSIM is the mean of the channels.",
+    s.addText("S_comp = accounted compressed size = codebook (K × 16 bytes, one byte per element) + Huffman table + Huffman-coded data. The table is accounted as 5 bytes per used symbol (1 byte symbol + 4 bytes frequency) plus 10 bytes of fixed metadata. For color images, MSE and PSNR are computed over RGB and SSIM is the mean of the channels.",
       { x: 0.7, y: 5.6, w: 11.95, h: 1.0, fontFace: "Calibri", fontSize: 13, italic: true, color: PURPLE, margin: 0 });
   };
 
@@ -143,12 +143,14 @@ module.exports.make = function (p) {
     bullets(s, ["Parallelize the delta coding, Huffman coding and reconstruction stages.",
       "Evaluate other block sizes, codebook sizes and larger images.",
       "Define an efficiency measure that accounts for the different speeds of P-cores and E-cores.",
-      "Implement a complete container file format with a stored Huffman header and a stand-alone decoder.",
+      "Implement a complete container file format (stored Huffman table and header) with a stand-alone decoder; the current program only accounts the compressed size.",
       "Extend the study to other hybrid CPUs and to hybrid MPI + OpenMP implementations."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 21);
     s = p.addSlide(); hdr(s, "References", "References", DEEP, 2.3);
-    bullets(s, ["Linde, Buzo and Gray (1980): the LBG algorithm.", "Thomas et al. (2025);  Ranjan and Kumar (2023);  Bilal et al. (2024);  Paul et al. (2024).",
-      "Tanović et al. (2024);  Papakyriakou et al. (2025);  Bystrov et al. (2023);  Zangana (2025).",
-      "(Replace this slide with the full reference list from the thesis, in the same numbering.)"], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
+    bullets(s, ["[6] Thomas, S., Krishna, A., Govind, S., Sahu, A.K. (2025). A novel image compression method using wavelet coefficients and Huffman coding. J. Eng. Res., 13(1): 361-370.",
+      "[16] Ranjan, R., Kumar, P. (2023). An improved image compression algorithm using 2D DWT and PCA with canonical Huffman encoding. Entropy, 25(10): 1382.",
+      "[17] Bilal, M., Ullah, Z., Mujahid, O., Fouzder, T. (2024). Fast Linde–Buzo–Gray (FLBG) algorithm for image compression through rescaling using bilinear interpolation. J. Imaging, 10(5): 124.",
+      "Linde, Y., Buzo, A., Gray, R.M. (1980). An algorithm for vector quantizer design. IEEE Trans. Commun., 28(1): 84-95.",
+      "Tanović, A. et al. (2024). ZINC 2024.  Papakyriakou, D. et al. (2025). Int. J. Comput. Appl.  Bystrov, O. et al. (2023). Proc. 7th Int. Conf. on Parallel, Distributed, GPU and Cloud Computing for Engineering.  Paul, R.K. et al. (2024).  Zangana, H.M. (2025)."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 16);
   };
   return { front, mid, back };
 };

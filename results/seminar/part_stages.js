@@ -89,9 +89,9 @@ bullets(s, 3, ["Stores the difference between successive VQ indices (offset 128)
 s = p.addSlide(); header(s, 3, "Stage 3", "Huffman Coding");
 figure(s, 3, "assets/ch3_fig35.png", 1145, 122, { x: 0.5, y: 1.4, w: 12.33, h: 1.7 });
 bullets(s, 3, ["Frequent symbols receive shorter codewords, rare symbols longer ones (lossless).",
-  "Output: Huffman table (header) and the encoded bitstream.",
-  "Compressed size = codebook (K × 16 bytes) + Huffman table + Huffman-coded data.",
-  "The table is accounted as 5 bytes per used symbol (1 byte symbol + 4 bytes frequency) plus 10 bytes of fixed metadata."], { x: 0.5, y: 3.45, w: 12.33, h: 3.35 }, 19);
+  "Output: the Huffman codes and the encoded bitstream.",
+  "Accounted compressed size = codebook (K × 16 bytes, one byte per codeword element) + Huffman table + Huffman-coded data.",
+  "The table is accounted as 5 bytes per used symbol (1 byte symbol + 4 bytes frequency) plus 10 bytes of fixed metadata. The program accounts this size; it does not write a stand-alone compressed file."], { x: 0.5, y: 3.45, w: 12.33, h: 3.35 }, 19);
 
 // ---------- Stage 4 ----------
 s = p.addSlide(); header(s, 4, "Stage 4", "Decoding and Evaluation");

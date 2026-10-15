@@ -10,7 +10,7 @@ for r in csv.DictReader(open("../final_campaign/eq_ad_total.csv")):
 P=sorted(d);EQ=[st.mean(d[p][0]) for p in P];AD=[st.mean(d[p][1]) for p in P];G=[st.mean(d[p][2]) for p in P]
 fig,ax=plt.subplots(figsize=(9.2,5.6),dpi=220)
 ax.axvspan(1.5,6.5,color="#EFEAF8",zorder=0)
-ax.text(2.0,14.2,"P-cores only: no difference",fontsize=13,color=PURPLE,fontweight="bold",va="center")
+ax.text(2.0,14.2,"P-cores only: no adaptive benefit",fontsize=13,color=PURPLE,fontweight="bold",va="center")
 ax.plot([2,14],[2,14],ls=":",color="#555",lw=2.2,label="Ideal linear speedup")
 ax.plot(P,EQ,color=ORG,lw=3.2,marker="s",ms=9,label="Equal distribution")
 ax.plot(P,AD,color=PURPLE,lw=3.2,marker="o",ms=10,label="Adaptive (speed-aware) distribution")

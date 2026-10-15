@@ -61,8 +61,8 @@
      "variable-length\ncodes"
     ],
     [
-     "Compressed data",
-     "codebook + Huffman\ntable + coded indices"
+     "Compressed size",
+     "codebook + Huffman table\n+ coded indices"
     ]
    ]
   },
@@ -95,6 +95,6 @@
  "between": [
   "16,384 training vectors (16-D)",
   "codebook C + index array L (gathered on Rank 0)",
-  "compressed data: codebook + Huffman table + coded indices"
+  "accounted size: codebook + Huffman table + coded indices"
  ]
 }
