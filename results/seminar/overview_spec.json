@@ -91,5 +91,10 @@
    ]
   }
  ],
- "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding and reconstruction"
+ "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding and reconstruction",
+ "between": [
+  "16,384 training vectors (16-D)",
+  "codebook C (64 codewords) + index array L (gathered on Rank 0)",
+  "compressed data: codebook + Huffman table + bitstream"
+ ]
 }

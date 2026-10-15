@@ -25,6 +25,7 @@ for i,st in enumerate(spec["stages"]):
     if st.get("loop"):
         ax.text(bx0+bw+arrow,y+rowH-0.1,"↻ "+st["loop"],fontsize=8,style="italic",fontweight="bold",color=c(st["color"]),va="center")
     if i<len(spec["stages"])-1:
+        ax.text(6.95,y+rowH+gap/2,spec["between"][i],fontsize=8.5,style="italic",fontweight="bold",color="#E0457B",va="center")
         ax.add_patch(FancyArrow(6.68,y+rowH+0.06,0,gap-0.12,width=0.1,head_width=0.26,head_length=0.12,length_includes_head=True,color="#1F1A33"))
 ax.text(W/2,7.22,spec["footer"],ha="center",va="center",fontsize=10,style="italic",color="#6B4FA3")
 fig.savefig("figs/overview_preview.png")

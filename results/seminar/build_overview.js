@@ -22,6 +22,7 @@ spec.stages.forEach((st, i) => {
   });
   if (st.loop) s.addText("↻ " + st.loop, { x: bx0 + 1 * (bw + arrow), y: y + rowH - 0.2, w: 3 * bw, h: 0.2, align: "left", fontFace: "Calibri", fontSize: 10, italic: true, bold: true, color: st.color, margin: 0 });
   if (i < spec.stages.length - 1)
+    s.addText(spec.between[i], { x: 6.95, y: y + rowH + 0.04, w: 5.5, h: gap - 0.08, fontFace: "Calibri", fontSize: 11, italic: true, bold: true, color: "E0457B", valign: "middle", margin: 0 }) ;
     s.addShape(p.ShapeType.downArrow, { x: 6.55, y: y + rowH + 0.06, w: 0.26, h: gap - 0.12, fill: { color: INK }, line: { color: INK, width: 0 } });
 });
 s.addText(spec.footer, { x: 0.5, y: 7.05, w: 12.33, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 12, italic: true, color: "6B4FA3", margin: 0 });
