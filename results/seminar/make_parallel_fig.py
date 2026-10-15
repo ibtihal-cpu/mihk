@@ -5,8 +5,8 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Rectangle
 import numpy as np
 
 INK="#1F1A33";DEEP="#2E2055";PURPLE="#6B4FA3";LAV="#A794D6";MAG="#E0457B";TEAL="#2A9D8F";GOLD="#F2B134";MIST="#F5F1FB"
-fig,ax=plt.subplots(figsize=(13.33,6.2),dpi=200)
-ax.set_xlim(0,100);ax.set_ylim(0,48);ax.axis("off")
+fig,ax=plt.subplots(figsize=(13.33,5.3),dpi=200)
+ax.set_xlim(0,100);ax.set_ylim(7,48);ax.axis("off")
 fig.patch.set_facecolor("white")
 
 def box(x,y,w,h,fc,txt,tc="white",fs=12,bold=True,ec=None):
@@ -52,7 +52,4 @@ box(92.8,19.5,6.4,9,DEEP,"Repeat\nuntil\nconverged",fs=8.5)
 # loop arrow back
 ax.annotate("",xy=(63,31.6),xytext=(96,29.2),arrowprops=dict(arrowstyle="-|>",color=DEEP,lw=2,connectionstyle="arc3,rad=0.45",linestyle="--"))
 
-# bottom message
-ax.add_patch(FancyBboxPatch((12,1.0),76,4.8,boxstyle="round,pad=0.2,rounding_size=1.2",fc=MIST,ec=PURPLE,lw=1.5))
-ax.text(50,3.4,"Each process works on its own blocks at the same time → training time drops",ha="center",va="center",fontsize=12,fontweight="bold",color=DEEP)
 plt.savefig("/home/user/mihk/results/seminar/figs/parallel_overview.png",bbox_inches="tight",facecolor="white")
