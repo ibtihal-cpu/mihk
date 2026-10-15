@@ -608,10 +608,10 @@ int huffman_on_labels(uint8_t *labels, int num_labels, int max_symbol,
     int enc_bytes = 0;
     uint8_t *enc = huff_encode(labels, num_labels, table, &enc_bytes);
 
-    /* حجم جدول Huffman: نحسبه 4 بايت لكل رمز مستخدم (تكرار الرمز فقط).
-       هذه اتفاقية حساب: البرنامج لا يكتب ملفاً مضغوطاً حقيقياً. ملف حقيقي قد يحتاج بايتاً إضافياً
-       لكل رمز (لمعرفة هوية الرمز) وبعض المعلومات العامة، وهذا يغيّر نسبة الضغط بحدود 1% تقريباً. */
-    int header_bytes = used_symbols * sizeof(uint32_t);
+    /* حجم جدول Huffman: نحسبه 5 بايت لكل رمز مستخدم (بايت واحد لهوية الرمز + 4 بايت لتكراره)،
+       يضاف إليه 10 بايت ثابتة كمعلومات عامة. هذه اتفاقية حساب: البرنامج لا يكتب ملفاً مضغوطاً حقيقياً. */
+    int header_bytes = used_symbols * (1 + sizeof(uint32_t));   /* الرمز (1 بايت) + تكراره (4 بايت) */
+    header_bytes += 10;                                         /* معلومات عامة ثابتة */
     int total_compressed = header_bytes + enc_bytes;
 
     uint8_t *decoded = (uint8_t*)malloc(num_labels);

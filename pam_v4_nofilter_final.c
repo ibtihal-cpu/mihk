@@ -628,12 +628,12 @@ int huffman_on_labels(uint8_t *labels, int num_labels, int max_symbol,
     int enc_bytes = 0;
     uint8_t *enc = huff_encode(labels, num_labels, table, &enc_bytes);
 
-    /* NOTE (accounting convention): this program does NOT write a self-contained compressed file. The compressed size
-       is ESTIMATED as  codebook (K*16 bytes) + Huffman-coded payload + Huffman table, where the table is accounted as
-       4 bytes per used symbol. A concrete container (symbol identities, symbol count, sequence length, valid bits)
-       would change the size slightly (about -1.4% to +3.8% depending on the table format). The Huffman decode check
-       below uses the in-memory tree; it verifies that the payload decodes losslessly, not a stored header. */
-    int header_bytes = used_symbols * sizeof(uint32_t);
+    /* Accounting convention: this program does not write a self-contained compressed file. The compressed size is
+       codebook (K*16 bytes) + Huffman-coded data + Huffman table. The table is accounted as 5 bytes per used symbol
+       (1 byte symbol identity + 4 bytes frequency) plus 10 bytes of fixed metadata. The Huffman decode check below
+       uses the in-memory tree; it verifies that the coded data decodes losslessly, not a stored header. */
+    int header_bytes = used_symbols * (1 + sizeof(uint32_t));   /* symbol (1 B) + frequency (4 B) */
+    header_bytes += 10;                                         /* fixed metadata */
     int total_compressed = header_bytes + enc_bytes;
 
     uint8_t *decoded = (uint8_t*)malloc(num_labels);
