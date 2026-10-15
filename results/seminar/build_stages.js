@@ -63,7 +63,7 @@ bullets(s, 1, ["The image is divided into non-overlapping 4 × 4 blocks.", "Each
 
 // ---------- Stage 2a ----------
 s = p.addSlide(); header(s, 2, "Stage 2", "LBG Codebook Training");
-figure(s, 2, "assets/ch3_fig33.png", 797, 582, FIG);
+figure(s, 2, "assets/lbg_flow_color.png", 1510, 1077, FIG);
 bullets(s, 2, ["Start from the global mean as the first codeword.", "Binary splitting (δ = 0.01) doubles the codebook size.", "Lloyd refinement: assign each vector to its nearest codeword, then update the centroids.", "Stop at ΔD ≤ ε or 100 iterations; repeat until K = 64."], TXT);
 
 // ---------- Stage 2b ----------
