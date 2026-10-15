@@ -30,7 +30,7 @@
    "steps": [
     [
      "Distribute",
-     "Scatterv: Equal / Adaptive"
+     "MPI_Scatterv:\nEqual / Adaptive"
     ],
     [
      "Assign",
@@ -91,7 +91,7 @@
    ]
   }
  ],
- "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding, reconstruction, and remaining metrics",
+ "footer": "Parallel: LBG training and SSIM   |   Rank 0: index coding, decoding, reconstruction, and remaining metrics",
  "between": [
   "16,384 training vectors (16-D)",
   "codebook C (64 codewords) + index array L (gathered on Rank 0)",
