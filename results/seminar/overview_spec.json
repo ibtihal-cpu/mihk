@@ -1,0 +1,95 @@
+{
+ "title": "Proposed Method",
+ "stages": [
+  {
+   "name": "Stage 1",
+   "sub": "Block Formation",
+   "color": "2F6FB5",
+   "light": "E3EEFA",
+   "steps": [
+    [
+     "Input image",
+     "512×512, gray / color"
+    ],
+    [
+     "4×4 blocks",
+     "non-overlapping"
+    ],
+    [
+     "Training vectors",
+     "16-D, N = 16,384"
+    ]
+   ]
+  },
+  {
+   "name": "Stage 2",
+   "sub": "Parallel LBG Training (MPI)",
+   "color": "E07B22",
+   "light": "FDEBD9",
+   "hl": true,
+   "steps": [
+    [
+     "Distribute",
+     "Scatterv: Equal / Adaptive"
+    ],
+    [
+     "Assign",
+     "nearest codeword on each rank"
+    ],
+    [
+     "Combine",
+     "Allreduce of sums and counts"
+    ],
+    [
+     "Update, repeat",
+     "until converged (K = 64)"
+    ]
+   ]
+  },
+  {
+   "name": "Stage 3",
+   "sub": "Entropy Coding (Rank 0)",
+   "color": "2A9D8F",
+   "light": "DDF3F0",
+   "steps": [
+    [
+     "Delta coding",
+     "differences of VQ indices"
+    ],
+    [
+     "Huffman coding",
+     "variable-length codes"
+    ],
+    [
+     "Compressed data",
+     "codebook + table + bitstream"
+    ]
+   ]
+  },
+  {
+   "name": "Stage 4",
+   "sub": "Decoding and Evaluation",
+   "color": "6B4FA3",
+   "light": "ECE6F6",
+   "steps": [
+    [
+     "Huffman decoding",
+     "Rank 0"
+    ],
+    [
+     "Inverse delta",
+     "recover VQ indices"
+    ],
+    [
+     "Reconstruction",
+     "codebook lookup"
+    ],
+    [
+     "Metrics",
+     "CR, PSNR, SSIM (parallel)"
+    ]
+   ]
+  }
+ ],
+ "footer": "Parallel: LBG training and SSIM   |   Rank 0: coding, decoding and reconstruction"
+}
