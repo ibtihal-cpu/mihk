@@ -23,16 +23,16 @@ bullets(s, ["Throughput = original image size / total execution time (MiB/s).",
   "Color images hold three times more data, but their total time grows by only about 2.2× at P = 14, so their throughput is higher.",
   "Shaded bands: minimum to maximum over the images."], { x: 8.95, y: 1.35, w: 3.9, h: 5.5 }, 15);
 // ---- Karp-Flatt ----
-s = p.addSlide(); header(s, "Karp–Flatt Metric");
-const H = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: TEAL }, align: "center", fontSize: 15 } });
-const C = (t, f, o) => ({ text: t, options: Object.assign({ align: "center", fontSize: 15, color: INK, fill: { color: f } }, o || {}) });
-const data = [[2, "0.033", "96.8", "0.101", "90.8"], [4, "0.018", "94.8", "0.081", "80.5"], [6, "0.022", "90.2", "0.084", "70.4"], [8, "0.038", "78.8", "0.110", "56.5"], [10, "0.040", "73.6", "0.109", "50.6"], [12, "0.042", "68.6", "0.107", "45.9"], [14, "0.040", "65.7", "0.105", "42.3"]];
-const rows = [[H("P"), H("LBG: Karp–Flatt"), H("LBG: efficiency (%)"), H("Total: Karp–Flatt"), H("Total: efficiency (%)")]];
-data.forEach((d, i) => { const f = i % 2 ? "FFFFFF" : "EAF6F4"; rows.push(d.map((v, j) => C(String(v), f, j === 0 ? { bold: true } : j === 1 || j === 3 ? { bold: true, color: j === 1 ? PURPLE : MAG } : {}))); });
-s.addTable(rows, { x: 0.5, y: 1.4, w: 7.9, colW: [0.9, 1.7, 1.8, 1.8, 1.7], rowH: 0.55, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
-s.addText("Mean of all 8 images.", { x: 0.5, y: 6.1, w: 7.9, h: 0.3, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
-bullets(s, ["Karp–Flatt estimates the serial fraction of the program from the measured speedup.",
-  "LBG: about 0.04 for P ≥ 8; the serial fraction stays small and does not grow with P.",
-  "Total: about 0.105 (gray ≈ 0.14, color ≈ 0.08); the sequential coding and reconstruction stages dominate.",
-  "This explains why the total speedup (5.00× gray, 6.84× color) is lower than the LBG speedup (9.19×)."], { x: 8.65, y: 1.4, w: 4.2, h: 5.0 }, 15);
+  s = p.addSlide(); header(s, "Karp–Flatt Metric");
+  const H = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: TEAL }, align: "center", fontSize: 13 } });
+  const C = (t, f, o) => ({ text: t, options: Object.assign({ align: "center", fontSize: 14, color: INK, fill: { color: f } }, o || {}) });
+  const data = [[2, "0.033", "96.8", "0.132", "88.4", "0.072", "93.3"], [4, "0.018", "94.8", "0.112", "74.8", "0.053", "86.3"], [6, "0.022", "90.2", "0.117", "63.2", "0.058", "77.5"], [8, "0.038", "78.8", "0.143", "50.1", "0.084", "63.0"], [10, "0.040", "73.6", "0.142", "43.9", "0.083", "57.2"], [12, "0.042", "68.6", "0.140", "39.3", "0.082", "52.4"], [14, "0.040", "65.7", "0.138", "35.7", "0.080", "48.9"]];
+  const rows = [[H("P"), H("LBG: KF"), H("LBG: Eff. (%)"), H("Total gray: KF"), H("Total gray: Eff. (%)"), H("Total color: KF"), H("Total color: Eff. (%)")]];
+  data.forEach((d, i) => { const f = i % 2 ? "FFFFFF" : "EAF6F4"; rows.push(d.map((v, j) => C(String(v), f, j === 0 ? { bold: true } : j === 1 ? { bold: true, color: PURPLE } : j === 3 || j === 5 ? { bold: true, color: MAG } : {}))); });
+  s.addTable(rows, { x: 0.5, y: 1.4, w: 8.5, colW: [0.7, 1.1, 1.3, 1.3, 1.4, 1.3, 1.4], rowH: 0.58, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
+  s.addText("LBG: mean of the 8 images. Total: mean of the 4 grayscale and of the 4 color images, separately. KF = Karp–Flatt, Eff. = efficiency.", { x: 0.5, y: 6.1, w: 8.5, h: 0.6, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
+  bullets(s, ["Karp–Flatt estimates the serial fraction of the program from the measured speedup.",
+    "LBG: about 0.04 for P ≥ 8; the serial fraction stays small and does not grow with P.",
+    "Total: about 0.14 (gray) and 0.08 (color); the sequential coding and reconstruction stages dominate.",
+    "Color is lower because LBG is a larger share of its time (81% against 77%)."], { x: 9.25, y: 1.4, w: 3.6, h: 5.3 }, 14);
 };
