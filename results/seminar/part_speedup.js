@@ -12,7 +12,7 @@ const items = ["LBG speedup reaches 9.19× on 14 processes (efficiency ≈ 66%).
   "Near-linear for P ≤ 6, where only P-cores are used.",
   "The slope drops once the slower E-cores join.",
   "Karp–Flatt ≈ 0.04 for P ≥ 8: the serial fraction of LBG stays small.",
-  "Total time: 5.00× (gray) and 6.84× (color), because coding and reconstruction remain sequential."];
+  "This is the LBG stage (mean of the 8 images). The total speedup is shown separately for gray and color on the next slide."];
 s.addShape(p.ShapeType.roundRect, { x: 8.95, y: 1.35, w: 3.9, h: 5.5, rectRadius: 0.08, fill: { color: MIST }, line: { color: MIST, width: 0 } });
 s.addText(items.map((t, i) => ({ text: t, options: { bullet: { code: "25A0", color: TEAL }, breakLine: i < items.length - 1, paraSpaceAfter: 9 } })),
   { x: 9.05, y: 1.45, w: 3.7, h: 5.3, valign: "top", fontFace: "Calibri", fontSize: 16, color: INK, margin: 0.08 });
