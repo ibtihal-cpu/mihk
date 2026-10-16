@@ -64,7 +64,8 @@ i0 = md.index("### Equal vs Adaptive")
 def block(tag):
     s = md.index(tag, i0); e = md.index("\n\n", s)
     rows = [l for l in md[s:e].split("\n")[1:] if l.startswith("|")][2:]
-    return [[c.strip().replace("-", "−") if re.fullmatch(r"-\d+(\.\d+)?", c.strip()) else c.strip() for c in l.strip("|").split("|")] for l in rows]
+    fix = lambda c: "0.0" if c == "-0.0" else (c.replace("-", "\u2212") if re.fullmatch(r"-\d+(\.\d+)?", c) else c)
+    return [[fix(c.strip()) for c in l.strip("|").split("|")] for l in rows]
 head = ["P", "Equal LBG (s)", "Adaptive LBG (s)", "LBG reduction (%)", "Images faster", "Equal total (s)", "Adaptive total (s)", "Total reduction (%)", "Images faster"]
 w = [1.0, 1.9, 1.9, 1.9, 1.6, 1.9, 1.9, 1.9, 1.6]
 para("Table A.1. Mean execution times (s) of the Equal and Adaptive strategies and the relative reduction achieved by the Adaptive strategy: (a) grayscale images and (b) color images.", italic=True, space=4, keep=True)
