@@ -6,6 +6,7 @@ require("./part_stages.js")(p);
 t.mid();
 require("./part_images.js")(p);
 require("./part_table.js")(p);
+require("./part_entropy.js")(p);
 require("./part_speedup.js")(p);
 require("./part_eqad.js")(p);
 require("./part_thrkf.js")(p);
