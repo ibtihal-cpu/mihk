@@ -34,11 +34,11 @@ shares=["larger share","larger share","smaller share","smaller share"]
 ys=[36,29,22,15]
 for y,c,l,s in zip(ys,cols,labs,shares):
     box(23,y-1.5,16,5.5,c,l+"\n"+s,fs=10)
-ax.text(31,44.5,"Each process gets a chunk",ha="center",fontsize=12,fontweight="bold",color=INK)
+ax.text(31,44.5,"Each process gets a chunk (Adaptive shown)",ha="center",fontsize=12,fontweight="bold",color=INK)
 ax.text(31,9.6,"Adaptive: chunk size ∝ core speed",ha="center",fontsize=10,color=INK,style="italic")
 
 # 3 local assignment
-box(52,17,16,14,GOLD,"Local step:\nnearest codeword\nfor each block\n(≈77% of\nsequential time)",tc=INK,fs=10.5)
+box(52,17,16,14,GOLD,"Local step:\nnearest codeword\nfor each block\n(main cost of LBG)",tc=INK,fs=10.5)
 for y in ys: arrow(39.5,y+1.7,51.7,24,c="#999999")
 ax.text(60,33.0,"in parallel",ha="center",fontsize=12,fontweight="bold",color=MAG)
 

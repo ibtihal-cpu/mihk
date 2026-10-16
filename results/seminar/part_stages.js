@@ -70,7 +70,7 @@ s = p.addSlide(); header(s, 2, "Stage 2", "Parallel LBG Training (MPI)");
 (function () {
   const im = { w: PW, h: PH };
   figure(s, 2, "figs/parallel_overview.png", PW, PH, { x: 0.5, y: 1.25, w: 12.33, h: 4.6 });
-  const items = [["SPMD: every rank runs the same program on its own chunk of vectors.", "Nearest-codeword assignment is local: about 77% of the sequential time (gray)."],
+  const items = [["SPMD: every rank runs the same program on its own chunk of vectors.", "Nearest-codeword assignment is local and is the main cost of LBG, which takes about 77% of the sequential time (gray)."],
                  ["Allreduce combines sums, counts and distortion; every rank updates the same codebook.", "Gatherv collects the final indices on Rank 0."]];
   items.forEach((col, k) => bullets(s, 2, col, { x: 0.5 + k * 6.25, y: 5.95, w: 6.08, h: 1.35 }, 14));
 })();

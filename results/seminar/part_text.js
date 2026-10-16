@@ -117,7 +117,7 @@ module.exports.make = function (p) {
     let s = p.addSlide(); hdr(s, "Experimental Results", "Experimental Setup", TEAL, 3.3);
     const cards = [["Hardware", "Intel Core i7-13650HX: 6 P-cores and 8 E-cores (14 cores in total).", PURPLE], ["Software", "Ubuntu 24.04, GCC 13.3 (-O2), Open MPI 4.1.6, written in C.", ORG],
       ["Protocol", "Median of 5 runs; governor set to performance; processes bound to cores, P-cores first.", TEAL], ["Data", "8 standard 512 × 512 images: 4 grayscale and 4 color.", MAG],
-      ["LBG settings", "4 × 4 blocks, K = 64 codewords, δ = 0.01, ε = 10⁻⁴ (relative improvement in distortion), at most 100 iterations per level.", DEEP], ["Strategies", "Equal (default for P ≤ 4) and Adaptive speed-aware (P > 4).", GOLD]];
+      ["LBG settings", "4 × 4 blocks, K = 64 codewords, δ = 0.01, ε = 0.0001 (relative improvement in distortion), at most 100 iterations per level.", DEEP], ["Strategies", "Equal (default for P ≤ 4) and Adaptive speed-aware (P > 4).", GOLD]];
     cards.forEach((c, i) => card(s, 0.7 + (i % 2) * 6.05, 1.45 + Math.floor(i / 2) * 1.8, 5.9, 1.6, c[2], c[0], c[1], 20, 15));
     // metrics
     s = p.addSlide(); hdr(s, "Experimental Results", "Evaluation Metrics", TEAL, 3.3);

@@ -13,7 +13,8 @@ const items = ["With Equal distribution, the faster P-cores finish early and wai
   "LBG time is reduced by 28.3%, 23.6%, 19.8% and 17.2% at P = 8, 10, 12 and 14.",
   "Total time is reduced by 17.9% to 8.8%.",
   "No adaptive-distribution benefit was observed when only P-cores were used (P ≤ 6).",
-  "The reconstructed images are identical in both cases."];
+  "The reconstructed images are identical in both cases.",
+  "Adaptive values here come from the Equal-vs-Adaptive runs, so they can differ by up to 0.02× from the main speedup runs."];
 s.addShape(p.ShapeType.roundRect, { x: 8.95, y: 1.35, w: 3.9, h: 5.5, rectRadius: 0.08, fill: { color: MIST }, line: { color: MIST, width: 0 } });
 s.addText(items.map((t, i) => ({ text: t, options: { bullet: { code: "25A0", color: TEAL }, breakLine: i < items.length - 1, paraSpaceAfter: 8 } })),
   { x: 9.05, y: 1.45, w: 3.7, h: 5.3, valign: "top", fontFace: "Calibri", fontSize: 15, color: INK, margin: 0.08 });

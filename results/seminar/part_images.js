@@ -16,11 +16,12 @@ let s = p.addSlide(); header(s, "Results", "Test Images", TEAL);
 const names = [["Lena", "Boat", "Cameraman", "Peppers"], ["Lena", "Peppers", "F16", "Gold Hill"]];
 const rows = ["Grayscale", "Color"];
 for (let r = 0; r < 2; r++) {
-  s.addText(rows[r], { x: 0.5, y: 1.25 + r * 3.0, w: 6, h: 0.35, fontFace: "Calibri", fontSize: 18, bold: true, color: TEAL, margin: 0 });
+  const ly = r === 0 ? 1.2 : 4.25, fy = r === 0 ? 1.55 : 4.6, sz = 2.3;
+  s.addText(rows[r], { x: 0.5, y: ly, w: 6, h: 0.32, fontFace: "Calibri", fontSize: 18, bold: true, color: TEAL, margin: 0 });
   for (let c = 0; c < 4; c++) {
-    const x = 0.5 + c * 3.1, y = 1.65 + r * 3.0;
-    frame(s, x, y, 2.5, 2.5, "Insert image");
-    s.addText(names[r][c], { x, y: y + 2.52, w: 2.5, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 14, bold: true, color: INK, margin: 0 });
+    const x = 0.5 + c * 3.1;
+    frame(s, x, fy, sz, sz, "Insert image");
+    s.addText(names[r][c], { x, y: fy + sz + 0.03, w: sz, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 14, bold: true, color: INK, margin: 0 });
   }
 }
 // ---- original vs reconstructed ----
@@ -32,8 +33,8 @@ function gridSlide(kind) {
   const label = kind === "gray" ? "Grayscale Images" : "Color Images";
   const s = p.addSlide(); header(s, "Results", `Reconstruction Results: ${label}`, TEAL);
   const sz = 2.55, x0 = 1.75, gx = 0.15, yO = 1.55, yR = 4.2;
-  s.addText("Original", { x: 0.45, y: yO, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 15, bold: true, color: DEEP, margin: 0 });
-  s.addText("Reconstructed", { x: 0.45, y: yR, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 15, bold: true, color: DEEP, margin: 0 });
+  s.addText("Original", { x: 0.45, y: yO, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 14, bold: true, color: DEEP, margin: 0 });
+  s.addText("Reconstructed", { x: 0.35, y: yR, w: 1.35, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 13, bold: true, color: DEEP, margin: 0 });
   data[kind].forEach(([nm, psnr, ssim], c) => {
     const x = x0 + c * (sz + gx);
     s.addText(nm, { x, y: 1.18, w: sz, h: 0.33, align: "center", fontFace: "Calibri", fontSize: 17, bold: true, color: TEAL, margin: 0 });
