@@ -11,7 +11,7 @@ module.exports = function (p) {
   s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.8, w: 8.2, h: 5.05, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: TEAL, width: 1.25 } });
   s.addImage({ path: "assets/total_speedup_chart.png", x: 0.5 + (8.2 - 2024 * r) / 2, y: 1.8 + (5.05 - 1232 * r) / 2, w: 2024 * r, h: 1232 * r });
   const items = ["Total speedup at P = 14: 5.00× (grayscale) and 6.84× (color); efficiency 35.7% and 48.9%.",
-    "It is lower than the LBG speedup (9.19×) because the other stages (image reading, delta and Huffman coding, reconstruction) remain sequential.",
+    "It is lower than the LBG speedup (9.19×) because the work outside LBG (mainly image reading and file output) runs on Rank 0.",
     "Color images gain more: LBG is 81% of their sequential time, against 77% for grayscale.",
     "Total time is the whole program execution; the shaded bands show the minimum to maximum over the images of each type."];
   s.addShape(p.ShapeType.roundRect, { x: 8.95, y: 1.35, w: 3.9, h: 5.5, rectRadius: 0.08, fill: { color: MIST }, line: { color: MIST, width: 0 } });

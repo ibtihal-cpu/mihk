@@ -140,9 +140,9 @@ module.exports.make = function (p) {
       "The speed-aware (Adaptive) distribution reduced LBG time by 17.2–28.3% compared with Equal distribution (P = 8 to 14).",
       "The parallel results were identical to the sequential ones: same reconstructed images and quality metrics.",
       "Quality: mean PSNR 29.49 dB and SSIM 0.8266 (gray); 28.80 dB and 0.7654 (color), at a compression ratio of ___ (gray) and ___ (color).",
-      "The total speedup is limited by the sequential coding and reconstruction stages."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
+      "The total speedup is limited by the work that runs on Rank 0, mainly image reading and file output."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
     s = p.addSlide(); hdr(s, "Future Work", "Future Work", DEEP, 2.3);
-    bullets(s, ["Parallelize the delta coding, Huffman coding and reconstruction stages.",
+    bullets(s, ["Reduce the sequential part on Rank 0: faster image reading and file output (for example, parallel I/O).",
       "Evaluate other block sizes, codebook sizes and larger images.",
       "Define an efficiency measure that accounts for the different speeds of P-cores and E-cores.",
       "Implement a complete container file format (stored Huffman table and header) with a stand-alone decoder; the current program only accounts the compressed size.",

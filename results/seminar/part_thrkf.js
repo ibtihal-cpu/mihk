@@ -37,6 +37,6 @@ s.addTable(rows, { x: 0.5, y: 1.9, w: 8.5, colW: [0.7, 1.1, 1.3, 1.3, 1.4, 1.3, 
   s.addText("LBG: mean of the 8 images. Total: mean of the 4 grayscale and of the 4 color images, separately. KF = Karp–Flatt, Eff. = efficiency.", { x: 0.5, y: 6.4, w: 8.5, h: 0.6, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
   bullets(s, ["Karp–Flatt estimates the serial fraction of the program from the measured speedup.",
     "LBG: about 0.04 for P ≥ 8; the serial fraction stays small and does not grow with P.",
-    "Total: about 0.14 (gray) and 0.08 (color); the sequential coding and reconstruction stages dominate.",
+    "Total: about 0.14 (gray) and 0.08 (color); the work on Rank 0 (mainly image reading and file output) limits the speedup.",
     "Color is lower because LBG is a larger share of its time (81% against 77%)."], { x: 9.25, y: 1.4, w: 3.6, h: 5.3 }, 14);
 };
