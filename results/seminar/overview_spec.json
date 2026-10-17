@@ -17,7 +17,7 @@
     ],
     [
      "Training vectors",
-     "16-D,\nN = 16,384"
+     "16-D, N = 16,384\nper channel"
     ]
    ],
    "tag": "seq"
@@ -98,7 +98,7 @@
  ],
  "footer": "",
  "between": [
-  "16,384 training vectors (16-D)",
+  "16,384 training vectors per channel (16-D)",
   "codebook C + index array L (gathered on Rank 0)",
   "accounted size: codebook + Huffman table + coded indices"
  ]
