@@ -68,14 +68,14 @@ module.exports.make = function (p) {
 
     // 6 related work 1
     s = p.addSlide(); hdr(s, "Literature Review", "Related Work: Compression Quality", PURPLE, 2.6);
-    const rows = [[H("Ref.", PURPLE), H("Image", PURPLE), H("Study", PURPLE), H("CR", PURPLE), H("PSNR (dB)", PURPLE)]];
+    const rows = [[H("Ref.", PURPLE), H("Image", PURPLE), H("Study", PURPLE), H("Algorithm", PURPLE), H("CR", PURPLE), H("PSNR (dB)", PURPLE)]];
     const W = "FFFFFF", L = "F1ECF9";
-    const add = (a, f) => rows.push([C(a[0], f), C(a[1], f, { bold: true }), C(a[2], f, { align: "left", bold: !!a[6] }), a[3] === "___" ? BL("___", f) : C(a[3], f, a[6] ? { bold: true } : {}), C(a[4], f, a[6] ? { bold: true } : {})]);
-    [["[6]", "Lena", "Thomas et al.", "1.52", "54.28", "–"], ["[16]", "Lena", "Ranjan and Kumar", "4.41", "34.78", "–"], ["", "", "This work", "23.50", "29.67", "9.21×", 1],
-     ["[6]", "Boat", "Thomas et al.", "1.41", "54.07", "–"], ["", "", "This work", "26.54", "29.11", "9.22×", 1],
-     ["[17]", "Cameraman", "Bilal et al.", "–", "25.3–26.8*", "2.61×"], ["", "", "This work", "28.88", "29.75", "9.10×", 1]].forEach((a, i) => add(a, a[6] ? L : W));
+    const add = (a, f) => rows.push([C(a[0], f), C(a[1], f, { bold: true }), C(a[2], f, { align: "left", bold: !!a[6] }), C(a[7], f, { align: "left", bold: !!a[6], fontSize: 13 }), a[3] === "___" ? BL("___", f) : C(a[3], f, a[6] ? { bold: true } : {}), C(a[4], f, a[6] ? { bold: true } : {})]);
+    [["[6]", "Lena", "Thomas et al.", "1.52", "54.28", "–", 0, "Wavelet coefficients + Huffman coding"], ["[16]", "Lena", "Ranjan and Kumar", "4.41", "34.78", "–", 0, "2D DWT + PCA + canonical Huffman"], ["", "", "This work", "23.50", "29.67", "9.21×", 1, "LBG-VQ + delta + Huffman"],
+     ["[6]", "Boat", "Thomas et al.", "1.41", "54.07", "–", 0, "Wavelet coefficients + Huffman coding"], ["", "", "This work", "26.54", "29.11", "9.22×", 1, "LBG-VQ + delta + Huffman"],
+     ["[17]", "Cameraman", "Bilal et al.", "–", "25.3–26.8*", "2.61×", 0, "FLBG (LBG with bilinear rescaling)"], ["", "", "This work", "28.88", "29.75", "9.10×", 1, "LBG-VQ + delta + Huffman"]].forEach((a, i) => add(a, a[6] ? L : W));
     s.addNotes("CR values of 'This work' come from the previous Huffman-table accounting. Replace them with the CR column of correctness.csv after the rerun (expected change about -1.2%). Source values checked against the papers: [6] Table 1 and Table 3; [16] Table 1; [17] Table 1 (Cameraman, FLBG).");
-    s.addTable(rows, { x: 0.7, y: 1.35, w: 11.9, colW: [1.2, 2.2, 4.2, 2.0, 2.3], rowH: 0.5, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
+    s.addTable(rows, { x: 0.7, y: 1.35, w: 11.9, colW: [0.9, 1.5, 2.2, 4.0, 1.4, 1.9], rowH: 0.5, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
     s.addText("[16]: Lena 512 × 512, Table 1 (CR 4.4058, PSNR 34.7809 dB). [6]: near-lossless scheme. * [17]: FLBG PSNR over 0.15–0.625 bpp (CR not reported).",
       { x: 0.7, y: 5.55, w: 11.9, h: 0.8, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
     s.addText("This work reaches a much higher compression ratio than [6] and [16], at a lower PSNR.", { x: 0.7, y: 6.4, w: 11.9, h: 0.6, fontFace: "Cambria", fontSize: 18, bold: true, color: DEEP, margin: 0 });
