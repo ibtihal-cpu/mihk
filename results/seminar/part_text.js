@@ -121,13 +121,15 @@ module.exports.make = function (p) {
     cards.forEach((c, i) => card(s, 0.7 + (i % 2) * 6.05, 1.45 + Math.floor(i / 2) * 1.8, 5.9, 1.6, c[2], c[0], c[1], 20, 15));
     // metrics
     s = p.addSlide(); hdr(s, "Results", "Performance and Quality Evaluation Metrics", TEAL, 1.6);
-    const mrows = [[H("Quality", TEAL), H("Formula", TEAL), H("Performance", ORG), H("Formula", ORG)],
-      ["CR", "S_orig / S_comp", "Execution time", "T (median of 5 runs)"], ["BPP", "compressed bits / pixels", "Speedup", "S = T_seq / T_P"],
-      ["MSE", "mean (I − Î)²", "Efficiency", "E = S / P"], ["PSNR", "10·log10(255² / MSE)  dB", "Throughput", "I_size / T_total  (MiB/s)"], ["SSIM", "11 × 11 Gaussian window, σ = 1.5", "Karp–Flatt", "e = (1/S − 1/P) / (1 − 1/P)"]];
-    const body = mrows.slice(1).map((r, i) => { const f = i % 2 ? "FFFFFF" : "EEF8F6"; return [C(r[0], f, { bold: true, color: TEAL, fontSize: 17 }), C(r[1], f, { fontSize: 16 }), C(r[2], i % 2 ? "FFFFFF" : "FDF1E6", { bold: true, color: ORG, fontSize: 17 }), C(r[3], i % 2 ? "FFFFFF" : "FDF1E6", { fontSize: 16 })]; });
-    s.addTable([mrows[0]].concat(body), { x: 0.7, y: 1.45, w: 11.95, colW: [1.6, 4.4, 2.1, 3.85], rowH: 0.7, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
-    s.addText("S_comp = codebook + Huffman table + Huffman-coded data (accounted size).",
-      { x: 0.7, y: 5.75, w: 11.95, h: 0.4, fontFace: "Calibri", fontSize: 15, italic: true, color: PURPLE, margin: 0 });
+    const L = [["Compression Quality", ["Compression Ratio (CR)", "Bits Per Pixel (BPP)", "MSE", "PSNR", "SSIM"], TEAL, "EEF8F6"], ["Parallel Performance", ["Execution Time", "Speedup", "Parallel Efficiency", "Throughput", "Karp–Flatt Metric"], ORG, "FDF1E6"]];
+    L.forEach((c, i) => {
+      const x = 0.9 + i * 6.0;
+      s.addShape(p.ShapeType.roundRect, { x, y: 1.5, w: 5.5, h: 0.7, rectRadius: 0.08, fill: { color: c[2] }, line: { color: c[2], width: 0 } });
+      s.addText(c[0], { x, y: 1.5, w: 5.5, h: 0.7, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 22, bold: true, color: "FFFFFF", margin: 0 });
+      s.addShape(p.ShapeType.roundRect, { x, y: 2.3, w: 5.5, h: 3.6, rectRadius: 0.08, fill: { color: c[3] }, line: { color: c[2], width: 1.25 } });
+      s.addText(c[1].map((t, k) => ({ text: t, options: { bullet: { code: "25A0", color: c[2] }, breakLine: k < c[1].length - 1, paraSpaceAfter: 10 } })), { x: x + 0.3, y: 2.4, w: 4.9, h: 3.4, valign: "middle", fontFace: "Calibri", fontSize: 22, color: "1F1A33", margin: 0.05 });
+    });
+    s.addText("Each formula is shown next to the result it measures.", { x: 0.9, y: 6.2, w: 11.5, h: 0.4, align: "center", fontFace: "Calibri", fontSize: 16, italic: true, color: PURPLE, margin: 0 });
   };
 
   // ================= BACK: conclusion, future, references =================

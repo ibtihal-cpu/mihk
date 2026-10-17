@@ -5,9 +5,11 @@ module.exports = function (p) {
   s.addText("Results", { x: 0.5, y: 0.35, w: 1.9, h: 0.55, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 18, bold: true, color: "FFFFFF", margin: 0 });
   s.addText("Entropy and Delta–Huffman Coding Efficiency", { x: 2.6, y: 0.3, w: 10.2, h: 0.65, valign: "middle", fontFace: "Cambria", fontSize: 28, bold: true, color: DEEP, margin: 0 });
   s.addShape(p.ShapeType.rect, { x: 0.5, y: 1.05, w: 12.33, h: 0.04, fill: { color: TEAL }, line: { color: TEAL, width: 0 } });
-  const r = Math.min(8.2 / 2024, 5.5 / 1232);
-  s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.35, w: 8.2, h: 5.5, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: TEAL, width: 1.25 } });
-  s.addImage({ path: "assets/entropy_chart.png", x: 0.5 + (8.2 - 2024 * r) / 2, y: 1.35 + (5.5 - 1232 * r) / 2, w: 2024 * r, h: 1232 * r });
+  s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.2, w: 8.2, h: 0.5, rectRadius: 0.08, fill: { color: "FDF1E6" }, line: { color: "E07B22", width: 1.25 } });
+  s.addText([{ text: "H = −Σ p(s) · log₂ p(s)   (bits / symbol)", options: { breakLine: false } }], { x: 0.5, y: 1.2, w: 8.2, h: 0.5, align: "center", valign: "middle", fontFace: "Cambria", fontSize: 19, bold: true, color: "2E2055", margin: 0.04 });
+  const r = Math.min(8.2 / 2024, 5.05 / 1232);
+  s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.8, w: 8.2, h: 5.05, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: TEAL, width: 1.25 } });
+  s.addImage({ path: "assets/entropy_chart.png", x: 0.5 + (8.2 - 2024 * r) / 2, y: 1.8 + (5.05 - 1232 * r) / 2, w: 2024 * r, h: 1232 * r });
   const items = ["Delta coding lowers the entropy of the index sequence from 5.30 to 4.19 bits on average (−1.10 bits).",
     "The reduction depends on the spatial correlation of the image: 0.73 bits (Lena) to 1.48 bits (Cameraman).",
     "The Huffman average code length (4.23 bits) is within 0.04 bits of the entropy after delta coding.",
