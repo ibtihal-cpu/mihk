@@ -154,14 +154,19 @@ module.exports.make = function (p) {
       "Linde, Y., Buzo, A., Gray, R.M. (1980). An algorithm for vector quantizer design. IEEE Trans. Commun., 28(1): 84-95.",
       "Tanović, A. et al. (2024). ZINC 2024.  Papakyriakou, D. et al. (2025). Int. J. Comput. Appl.  Bystrov, O. et al. (2023). Proc. 7th Int. Conf. on Parallel, Distributed, GPU and Cloud Computing for Engineering.  Paul, R.K. et al. (2024).  Zangana, H.M. (2025)."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 16);
     // closing
-    s = p.addSlide(); s.background = { color: DEEP };
-    s.addShape(p.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: DEEP }, line: { color: DEEP, width: 0 } });
-    s.addShape(p.ShapeType.rect, { x: 0, y: 0, w: 0.35, h: 7.5, fill: { color: MAG }, line: { color: MAG, width: 0 } });
-    s.addText("Thank you for your attention", { x: 0.9, y: 1.7, w: 5.6, h: 2.2, fontFace: "Cambria", fontSize: 44, bold: true, color: "FFFFFF", margin: 0, valign: "middle" });
-    s.addText("Questions?", { x: 0.9, y: 4.0, w: 5.6, h: 0.8, fontFace: "Calibri", fontSize: 32, bold: true, color: "F2993A", margin: 0 });
-    s.addText([{ text: "MSc. Student Ibtihal Hussien", options: { bold: true, color: "FFFFFF", breakLine: true } }, { text: "University of Babylon", options: { color: "C9BDE8" } }],
-      { x: 0.9, y: 5.4, w: 5.6, h: 1.0, fontFace: "Calibri", fontSize: 20, margin: 0, paraSpaceAfter: 6 });
-    s.addImage({ path: "assets/closing.png", x: 6.5, y: 1.2, w: 6.5, h: 6.5 * 6.2 / 8.2 });
+    s = p.addSlide(); s.background = { color: "FFF8EE" };
+    s.addShape(p.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: "FFF8EE" }, line: { color: "FFF8EE", width: 0 } });
+    const conf = [["triangle", 5.06, 0.47, 0.48, "FFC93C", 48], ["ellipse", 1.07, 0.77, 0.32, "2A9D8F", 30], ["ellipse", 5.13, 6.77, 0.36, "E0457B", 285], ["rect", 2.01, 0.96, 0.27, "F2993A", 286], ["rect", 7.39, 1.45, 0.21, "E0457B", 280], ["triangle", 10.15, 4.95, 0.28, "6B4FA3", 41], ["triangle", 11.1, 5.11, 0.35, "F2993A", 311], ["star5", 9.79, 1.03, 0.31, "6B4FA3", 203], ["triangle", 12.43, 4.75, 0.41, "2A9D8F", 118], ["rect", 6.71, 1.13, 0.48, "FFC93C", 13], ["rect", 6.72, 0.28, 0.35, "2A9D8F", 93], ["triangle", 11.3, 1.19, 0.43, "4DA3FF", 329], ["triangle", 9.24, 0.28, 0.28, "FFC93C", 234], ["triangle", 1.0, 6.85, 0.34, "6B4FA3", 53], ["ellipse", 1.73, 0.23, 0.26, "FFC93C", 213], ["ellipse", 10.49, 1.15, 0.21, "FFC93C", 21], ["triangle", 8.17, 0.45, 0.41, "4DA3FF", 262], ["ellipse", 5.84, 0.5, 0.3, "E0457B", 320], ["rect", 0.24, 5.59, 0.34, "4DA3FF", 257], ["star5", 10.64, 0.16, 0.38, "F2993A", 203], ["ellipse", 2.61, 0.23, 0.48, "4DA3FF", 148], ["star5", 3.25, 0.87, 0.54, "6B4FA3", 77], ["star5", 9.89, 0.16, 0.32, "6B4FA3", 119], ["ellipse", 3.97, 1.02, 0.39, "F2993A", 270], ["triangle", 11.42, 0.36, 0.3, "2A9D8F", 126], ["triangle", 3.5, 0.23, 0.31, "4DA3FF", 287], ["star5", 8.38, 1.35, 0.32, "E0457B", 133], ["ellipse", 9.53, 4.91, 0.46, "2A9D8F", 54], ["triangle", 8.98, 6.31, 0.26, "6B4FA3", 204], ["triangle", 9.16, 1.03, 0.24, "4DA3FF", 44], ["ellipse", 7.57, 6.86, 0.4, "4DA3FF", 79], ["ellipse", 8.65, 7.02, 0.18, "E0457B", 111], ["rect", 7.43, 0.21, 0.48, "2A9D8F", 235], ["triangle", 4.38, 6.81, 0.45, "2A9D8F", 42], ["ellipse", 12.29, 1.12, 0.45, "4DA3FF", 8], ["star5", 0.34, 0.88, 0.47, "6B4FA3", 35], ["ellipse", 0.33, 0.17, 0.4, "4DA3FF", 283], ["ellipse", 6.11, 6.97, 0.19, "2A9D8F", 42], ["rect", 0.23, 1.67, 0.35, "FFC93C", 75], ["ellipse", 2.89, 6.79, 0.29, "6B4FA3", 37], ["star5", 5.25, 1.22, 0.43, "F2993A", 22], ["star5", 1.84, 6.99, 0.31, "6B4FA3", 268], ["star5", 4.38, 0.23, 0.35, "E0457B", 28], ["rect", 6.06, 1.25, 0.27, "2A9D8F", 177], ["rect", 12.4, 0.33, 0.41, "F2993A", 163], ["star5", 3.59, 6.79, 0.32, "F2993A", 325], ["rect", 0.37, 3.38, 0.19, "E0457B", 271], ["rect", 11.73, 5.19, 0.21, "4DA3FF", 244]];
+    conf.forEach(c => s.addShape(p.ShapeType[c[0]], { x: c[1], y: c[2], w: c[3], h: c[3], rotate: c[5], fill: { color: c[4] }, line: { color: c[4], width: 0 } }));
+    s.addText([{ text: "Thank ", options: { color: "6B4FA3" } }, { text: "You!", options: { color: "E0457B" } }],
+      { x: 0.8, y: 1.85, w: 11.7, h: 1.9, align: "center", valign: "middle", fontFace: "Cambria", fontSize: 88, bold: true, margin: 0 });
+    s.addText("for your attention", { x: 0.8, y: 3.75, w: 11.7, h: 0.8, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 36, color: "F2993A", bold: true, margin: 0 });
+    s.addShape(p.ShapeType.smileyFace, { x: 1.2, y: 5.05, w: 1.6, h: 1.6, fill: { color: "FFC93C" }, line: { color: "2E2055", width: 3 } });
+    s.addShape(p.ShapeType.roundRect, { x: 3.2, y: 5.25, w: 5.6, h: 1.2, rectRadius: 0.3, fill: { color: "E0457B" }, line: { color: "E0457B", width: 0 } });
+    s.addShape(p.ShapeType.triangle, { x: 2.85, y: 5.65, w: 0.45, h: 0.4, rotate: 270, fill: { color: "E0457B" }, line: { color: "E0457B", width: 0 } });
+    s.addText("Any questions?", { x: 3.2, y: 5.25, w: 5.6, h: 1.2, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 36, bold: true, color: "FFFFFF", margin: 0 });
+    s.addText([{ text: "Ibtihal Hussien", options: { bold: true, color: "2E2055", breakLine: true } }, { text: "University of Babylon", options: { color: "6B4FA3" } }],
+      { x: 9.5, y: 5.85, w: 3.6, h: 1.0, align: "right", fontFace: "Calibri", fontSize: 18, margin: 0, paraSpaceAfter: 4 });
   };
   return { front, mid, back };
 };
