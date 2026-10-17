@@ -19,7 +19,8 @@
      "Training vectors",
      "16-D,\nN = 16,384"
     ]
-   ]
+   ],
+   "tag": "seq"
   },
   {
    "name": "Stage 2",
@@ -44,11 +45,12 @@
      "Refine and split",
      "per level,\nuntil K = 64"
     ]
-   ]
+   ],
+   "tag": "par"
   },
   {
    "name": "Stage 3",
-   "sub": "Lossless Index\nCoding (Rank 0)",
+   "sub": "Lossless Index\nCoding",
    "color": "2A9D8F",
    "light": "DDF3F0",
    "steps": [
@@ -64,7 +66,8 @@
      "Compressed size",
      "codebook + Huffman table\n+ coded indices"
     ]
-   ]
+   ],
+   "tag": "seq"
   },
   {
    "name": "Stage 4",
@@ -74,7 +77,7 @@
    "steps": [
     [
      "Huffman decoding",
-     "Rank 0"
+     "bit stream to\ndelta values"
     ],
     [
      "Inverse delta",
@@ -86,12 +89,14 @@
     ],
     [
      "Metrics",
-     "CR, BPP, MSE,\nPSNR; parallel SSIM"
+     "CR, BPP, MSE, PSNR\n(Rank 0)\nSSIM (parallel)"
     ]
-   ]
+   ],
+   "tag": "seq",
+   "parstep": 3
   }
  ],
- "footer": "Parallel: LBG training and SSIM   |   Rank 0: index coding, decoding, reconstruction, and remaining metrics",
+ "footer": "",
  "between": [
   "16,384 training vectors (16-D)",
   "codebook C + index array L (gathered on Rank 0)",
