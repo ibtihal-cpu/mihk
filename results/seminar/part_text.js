@@ -82,7 +82,7 @@ module.exports.make = function (p) {
     // 7 related work 2
     s = p.addSlide(); hdr(s, "Literature Review", "Related Work: Parallel Speedup", PURPLE, 2.6);
     const r2 = [[H("Study", PURPLE), H("Application", PURPLE), H("Parallel Resources", PURPLE), H("Baseline", PURPLE), H("Reported Speedup", PURPLE)]];
-    [["Zangana (2025)", "Image compression", "1–16 GPUs", "1 GPU", "9.09× (16 GPUs)"], ["Papakyriakou et al. (2025)", "MPI-based k-means clustering", "2–48 MPI processes", "2 processes", "10.05×"], ["Bystrov et al. (2023)", "Discrete-element simulation", "8 heterogeneous containers", "Sequential", "Up to 6.0×"]]
+    [["Zangana (2025)", "Image compression", "1–16 GPUs", "1 GPU", "9.09× (16 GPUs)"], ["Papakyriakou et al. (2025)", "MPI-based k-means clustering", "2–48 MPI processes (24 Raspberry Pi nodes)", "2 processes", "≈ 10× (181.8 s to 18.1 s)"], ["Bystrov et al. (2023)", "Discrete-element simulation", "8 heterogeneous containers", "Sequential", "Up to 6.0×"]]
       .forEach((a, i) => r2.push(a.map((v, j) => C(v, i % 2 ? W : "F7F3FC", { align: j < 3 ? "left" : "center", bold: j === 0 }))));
     r2.push(["This work", "MPI-based LBG image compression", "14 MPI processes (6 P + 8 E)", "Sequential", "9.19× (LBG); 5.00× (gray total); 6.84× (color total)"].map((v, j) => C(v, "ECE6F6", { align: j < 3 ? "left" : "center", bold: true, color: MAG })));
     s.addTable(r2, { x: 0.7, y: 1.35, w: 11.9, colW: [2.6, 2.7, 2.9, 1.4, 2.3], rowH: 0.7, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
@@ -154,7 +154,7 @@ module.exports.make = function (p) {
       "Linde, Y., Buzo, A., Gray, R.M. (1980). An algorithm for vector quantizer design. IEEE Trans. Commun., 28(1): 84-95.",
       "Zangana, H.M. (2025). Design and implementation of a novel parallel algorithm for efficient image compression in high-performance computing. EAI Endorsed Trans. AI Robot., 4. doi:10.4108/airo.7832",
       "Bystrov, O., Pacevič, R., Kačeniauskas, A. (2023). Hybrid parallelization of discrete element software for heterogeneous resources. Proc. 7th Int. Conf. on Parallel, Distributed, GPU and Cloud Computing for Engineering, Civil-Comp Press, Paper 4.1. doi:10.4203/ccc.4.4.1",
-      "Papakyriakou, D. et al. (2025). Int. J. Comput. Appl.  [complete the reference from the paper]",
+      "Papakyriakou, D., Barbounakis, I.S. (2025). Parallel k-means benchmarking on a CPU-bound Beowulf cluster of Raspberry Pi nodes: an MPI-based scaling analysis with CPU-centric performance evaluation. Int. J. Comput. Appl., 187(32).",
       "Paul, R.K., Jena, S., Chandran, S., Bandyopadhyay, A., Swain, S. (2024). Image compression scheme based on optimized K-means clustering and higher-level decomposed DWT. Procedia Comput. Sci., 235: 642-655."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 16);
     // closing
     s = p.addSlide(); s.background = { color: "FFF8EE" };
