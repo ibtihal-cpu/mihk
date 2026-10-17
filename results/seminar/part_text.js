@@ -152,6 +152,15 @@ module.exports.make = function (p) {
       "[17] Bilal, M., Ullah, Z., Mujahid, O., Fouzder, T. (2024). Fast Linde–Buzo–Gray (FLBG) algorithm for image compression through rescaling using bilinear interpolation. J. Imaging, 10(5): 124.",
       "Linde, Y., Buzo, A., Gray, R.M. (1980). An algorithm for vector quantizer design. IEEE Trans. Commun., 28(1): 84-95.",
       "Tanović, A. et al. (2024). ZINC 2024.  Papakyriakou, D. et al. (2025). Int. J. Comput. Appl.  Bystrov, O. et al. (2023). Proc. 7th Int. Conf. on Parallel, Distributed, GPU and Cloud Computing for Engineering.  Paul, R.K. et al. (2024).  Zangana, H.M. (2025)."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 16);
+    // closing
+    s = p.addSlide(); s.background = { color: DEEP };
+    s.addShape(p.ShapeType.rect, { x: 0, y: 0, w: 13.333, h: 7.5, fill: { color: DEEP }, line: { color: DEEP, width: 0 } });
+    s.addShape(p.ShapeType.rect, { x: 0, y: 0, w: 0.35, h: 7.5, fill: { color: MAG }, line: { color: MAG, width: 0 } });
+    s.addText("Thank you for your attention", { x: 0.9, y: 1.7, w: 5.6, h: 2.2, fontFace: "Cambria", fontSize: 44, bold: true, color: "FFFFFF", margin: 0, valign: "middle" });
+    s.addText("Questions?", { x: 0.9, y: 4.0, w: 5.6, h: 0.8, fontFace: "Calibri", fontSize: 32, bold: true, color: "F2993A", margin: 0 });
+    s.addText([{ text: "MSc. Student Ibtihal Hussien", options: { bold: true, color: "FFFFFF", breakLine: true } }, { text: "University of Babylon", options: { color: "C9BDE8" } }],
+      { x: 0.9, y: 5.4, w: 5.6, h: 1.0, fontFace: "Calibri", fontSize: 20, margin: 0, paraSpaceAfter: 6 });
+    s.addImage({ path: "assets/closing.png", x: 6.5, y: 1.2, w: 6.5, h: 6.5 * 6.2 / 8.2 });
   };
   return { front, mid, back };
 };
