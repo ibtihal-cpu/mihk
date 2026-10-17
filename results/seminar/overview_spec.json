@@ -92,7 +92,7 @@
      "CR, BPP, MSE, PSNR\n(Rank 0)\nSSIM (parallel)"
     ]
    ],
-   "tag": "seq",
+   "tag": "mix",
    "parstep": 3
   }
  ],

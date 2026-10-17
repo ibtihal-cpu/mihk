@@ -16,7 +16,7 @@ const lines = (txt, opt) => txt.split("\n").map((t, i, a) => ({ text: t, options
     s.addText([{ text: st.name, options: { fontSize: 22, bold: true, breakLine: true } }].concat(lines(st.sub, { fontSize: 15 })),
       { x: hx, y, w: hw, h: rowH - 0.35, align: "center", valign: "middle", fontFace: "Calibri", color: "FFFFFF", margin: 0.06 });
     s.addShape(p.ShapeType.roundRect, { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, rectRadius: 0.16, fill: { color: "FFFFFF" }, line: { color: "FFFFFF", width: 0 } });
-    s.addText(st.tag === "par" ? "PARALLEL: all ranks" : "SEQUENTIAL: Rank 0", { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 12, bold: true, color: st.tag === "par" ? PAR : SEQ, margin: 0 });
+    s.addText(st.tag === "par" ? "PARALLEL: all ranks" : st.tag === "mix" ? "Rank 0 | Parallel: SSIM" : "SEQUENTIAL: Rank 0", { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, align: "center", valign: "middle", fontFace: "Calibri", fontSize: st.tag === "mix" ? 11 : 12, bold: true, color: st.tag === "par" ? PAR : SEQ, margin: 0 });
     st.steps.forEach((t, j) => {
       const x = bx0 + j * (bw + arrow);
       s.addShape(p.ShapeType.roundRect, { x, y: y + 0.1, w: bw, h: rowH - 0.2, rectRadius: 0.08, fill: { color: st.parstep === j ? "FDEBD9" : "FFFFFF" }, line: { color: st.parstep === j ? PAR : st.color, width: st.parstep === j ? 2.5 : 1.5, dashType: st.parstep === j ? "dash" : "solid" } });

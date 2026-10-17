@@ -15,7 +15,7 @@ for i,st in enumerate(spec["stages"]):
     ax.text(hx+hw/2,y+0.78,st["sub"],ha="center",va="center",color="white",fontsize=11.5,linespacing=1.25)
     tg=st["tag"]=="par"; tc="#E07B22" if tg else "#5B6770"
     ax.add_patch(FancyBboxPatch((hx+0.12,y+rowH-0.4),hw-0.24,0.32,boxstyle="round,pad=0,rounding_size=0.16",fc="white",ec="white"))
-    ax.text(hx+hw/2,y+rowH-0.24,"PARALLEL: all ranks" if tg else "SEQUENTIAL: Rank 0",ha="center",va="center",color=tc,fontsize=10,fontweight="bold")
+    ax.text(hx+hw/2,y+rowH-0.24,"PARALLEL: all ranks" if tg else ("Rank 0 | Parallel: SSIM" if st["tag"]=="mix" else "SEQUENTIAL: Rank 0"),ha="center",va="center",color=tc,fontsize=10,fontweight="bold")
     for j,t in enumerate(st["steps"]):
         x=bx0+j*(bw+arrow)
         ax.add_patch(FancyBboxPatch((x,y+0.1),bw,rowH-0.2,boxstyle="round,pad=0,rounding_size=0.08",fc="#FDEBD9" if st.get("parstep")==j else "white",ec="#E07B22" if st.get("parstep")==j else c(st["color"]),lw=2.5 if st.get("parstep")==j else 1.5,ls="--" if st.get("parstep")==j else "-"))
