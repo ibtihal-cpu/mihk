@@ -84,7 +84,7 @@ module.exports.make = function (p) {
     [["Tanović et al. (2024)", "k-means, image classification", "12 cores (OpenMP + MPI)", "Not stated", "Up to 10.2×"], ["Papakyriakou et al. (2025)", "k-means, 75 M synthetic points", "2–48 MPI processes", "2 processes", "≈ 10.05×"], ["Bystrov et al. (2023)", "Discrete-element simulation", "8 heterogeneous containers", "Sequential", "Up to 6.0×"]]
       .forEach((a, i) => r2.push(a.map((v, j) => C(v, i % 2 ? W : "F7F3FC", { align: j < 3 ? "left" : "center", bold: j === 0 }))));
     r2.push(["This work", "LBG image compression", "14 MPI processes (6 P + 8 E cores)", "Sequential", "9.19× (LBG); 5.00× / 6.84× (total, gray / color)"].map((v, j) => C(v, "ECE6F6", { align: j < 3 ? "left" : "center", bold: true, color: MAG })));
-    s.addTable(r2, { x: 0.7, y: 1.35, w: 11.9, colW: [2.6, 2.7, 2.9, 1.4, 2.3], rowH: 0.62, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
+    s.addTable(r2, { x: 0.7, y: 1.35, w: 11.9, colW: [2.6, 2.7, 2.9, 1.4, 2.3], rowH: 0.7, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
     s.addShape(p.ShapeType.roundRect, { x: 0.7, y: 5.2, w: 11.9, h: 1.55, rectRadius: 0.1, fill: { color: MIST }, line: { color: MAG, width: 2 } });
     s.addText([{ text: "Research gap  ", options: { bold: true, color: MAG, breakLine: true } },
       { text: "Existing parallel studies target k-means or other applications. To our knowledge, none of the reviewed studies evaluates MPI-parallel LBG for image compression on a hybrid P/E-core CPU.", options: { color: INK } }],
@@ -120,14 +120,14 @@ module.exports.make = function (p) {
       ["LBG settings", "4 × 4 blocks, K = 64 codewords, δ = 0.01, ε = 0.0001 (relative improvement in distortion), at most 100 iterations per level.", DEEP], ["Strategies", "Equal (default for P ≤ 4) and Adaptive speed-aware (P > 4).", GOLD]];
     cards.forEach((c, i) => card(s, 0.7 + (i % 2) * 6.05, 1.45 + Math.floor(i / 2) * 1.8, 5.9, 1.6, c[2], c[0], c[1], 20, 15));
     // metrics
-    s = p.addSlide(); hdr(s, "Experimental Results", "Evaluation Metrics", TEAL, 3.3);
+    s = p.addSlide(); hdr(s, "Results", "Performance and Quality Evaluation Metrics", TEAL, 1.6);
     const mrows = [[H("Quality", TEAL), H("Formula", TEAL), H("Performance", ORG), H("Formula", ORG)],
       ["CR", "S_orig / S_comp", "Execution time", "T (median of 5 runs)"], ["BPP", "compressed bits / pixels", "Speedup", "S = T_seq / T_P"],
       ["MSE", "mean (I − Î)²", "Efficiency", "E = S / P"], ["PSNR", "10·log10(255² / MSE)  dB", "Throughput", "I_size / T_total  (MiB/s)"], ["SSIM", "11 × 11 Gaussian window, σ = 1.5", "Karp–Flatt", "e = (1/S − 1/P) / (1 − 1/P)"]];
-    const body = mrows.slice(1).map((r, i) => { const f = i % 2 ? "FFFFFF" : "EEF8F6"; return [C(r[0], f, { bold: true, color: TEAL, fontSize: 15 }), C(r[1], f, { fontSize: 14 }), C(r[2], i % 2 ? "FFFFFF" : "FDF1E6", { bold: true, color: ORG, fontSize: 15 }), C(r[3], i % 2 ? "FFFFFF" : "FDF1E6", { fontSize: 14 })]; });
-    s.addTable([mrows[0]].concat(body), { x: 0.7, y: 1.45, w: 11.95, colW: [1.6, 4.4, 2.1, 3.85], rowH: 0.62, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
-    s.addText("S_comp = accounted compressed size = codebook (K × 16 bytes, one byte per element) + Huffman table + Huffman-coded data. The table is accounted as 5 bytes per used symbol (1 byte symbol + 4 bytes frequency) plus 10 bytes of fixed metadata. For color images, MSE and PSNR are computed over RGB and SSIM is the mean of the channels.",
-      { x: 0.7, y: 5.6, w: 11.95, h: 1.0, fontFace: "Calibri", fontSize: 13, italic: true, color: PURPLE, margin: 0 });
+    const body = mrows.slice(1).map((r, i) => { const f = i % 2 ? "FFFFFF" : "EEF8F6"; return [C(r[0], f, { bold: true, color: TEAL, fontSize: 17 }), C(r[1], f, { fontSize: 16 }), C(r[2], i % 2 ? "FFFFFF" : "FDF1E6", { bold: true, color: ORG, fontSize: 17 }), C(r[3], i % 2 ? "FFFFFF" : "FDF1E6", { fontSize: 16 })]; });
+    s.addTable([mrows[0]].concat(body), { x: 0.7, y: 1.45, w: 11.95, colW: [1.6, 4.4, 2.1, 3.85], rowH: 0.7, fontFace: "Calibri", border: { type: "solid", color: "FFFFFF", pt: 1.5 }, valign: "middle" });
+    s.addText("S_comp = codebook + Huffman table + Huffman-coded data (accounted size).",
+      { x: 0.7, y: 5.75, w: 11.95, h: 0.4, fontFace: "Calibri", fontSize: 15, italic: true, color: PURPLE, margin: 0 });
   };
 
   // ================= BACK: conclusion, future, references =================
