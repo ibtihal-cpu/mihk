@@ -81,10 +81,10 @@ module.exports.make = function (p) {
     s.addText("This work reaches a much higher compression ratio than [6] and [16], at a lower PSNR.", { x: 0.7, y: 6.4, w: 11.9, h: 0.6, fontFace: "Cambria", fontSize: 18, bold: true, color: DEEP, margin: 0 });
     // 7 related work 2
     s = p.addSlide(); hdr(s, "Literature Review", "Related Work: Parallel Speedup", PURPLE, 2.6);
-    const r2 = [[H("Study", PURPLE), H("Application", PURPLE), H("Resources", PURPLE), H("Baseline", PURPLE), H("Speedup", PURPLE)]];
-    [["Zangana (2025)", "Image compression (bitplane, wavelet, predictive coding)", "1–16 GPUs", "1 GPU", "9.09× (16 GPUs)"], ["Papakyriakou et al. (2025)", "k-means, 75 M synthetic points", "2–48 MPI processes", "2 processes", "≈ 10.05×"], ["Bystrov et al. (2023)", "Discrete-element simulation", "8 heterogeneous containers", "Sequential", "Up to 6.0×"]]
+    const r2 = [[H("Study", PURPLE), H("Application", PURPLE), H("Parallel Resources", PURPLE), H("Baseline", PURPLE), H("Reported Speedup", PURPLE)]];
+    [["Zangana (2025)", "Image compression", "1–16 GPUs", "1 GPU", "9.09× (16 GPUs)"], ["Papakyriakou et al. (2025)", "MPI-based k-means clustering", "2–48 MPI processes", "2 processes", "10.05×"], ["Bystrov et al. (2023)", "Discrete-element simulation", "8 heterogeneous containers", "Sequential", "Up to 6.0×"]]
       .forEach((a, i) => r2.push(a.map((v, j) => C(v, i % 2 ? W : "F7F3FC", { align: j < 3 ? "left" : "center", bold: j === 0 }))));
-    r2.push(["This work", "LBG image compression", "14 MPI processes (6 P + 8 E cores)", "Sequential", "9.19× (LBG); 5.00× / 6.84× (total, gray / color)"].map((v, j) => C(v, "ECE6F6", { align: j < 3 ? "left" : "center", bold: true, color: MAG })));
+    r2.push(["This work", "MPI-based LBG image compression", "14 MPI processes (6 P + 8 E)", "Sequential", "9.19× (LBG); 5.00× (gray total); 6.84× (color total)"].map((v, j) => C(v, "ECE6F6", { align: j < 3 ? "left" : "center", bold: true, color: MAG })));
     s.addTable(r2, { x: 0.7, y: 1.35, w: 11.9, colW: [2.6, 2.7, 2.9, 1.4, 2.3], rowH: 0.7, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
     s.addShape(p.ShapeType.roundRect, { x: 0.7, y: 5.2, w: 11.9, h: 1.55, rectRadius: 0.1, fill: { color: MIST }, line: { color: MAG, width: 2 } });
     s.addText([{ text: "Research gap  ", options: { bold: true, color: MAG, breakLine: true } },
