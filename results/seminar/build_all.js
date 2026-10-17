@@ -1,0 +1,16 @@
+const pptxgen = require("pptxgenjs");
+const p = new pptxgen(); p.layout = "LAYOUT_WIDE";
+const t = require("./part_text.js").make(p);
+t.front();
+require("./part_stages.js")(p);
+t.mid();
+require("./part_images.js")(p);
+require("./part_table.js")(p);
+require("./part_entropy.js")(p);
+require("./part_speedup.js")(p);
+require("./part_efficiency.js")(p);
+require("./part_total.js")(p);
+require("./part_eqad.js")(p);
+require("./part_thrkf.js")(p);
+t.back();
+p.writeFile({ fileName: "figs/Seminar_Ibtihal_v3.pptx" }).then(() => console.log("ok"));
