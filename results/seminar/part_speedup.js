@@ -10,6 +10,7 @@ s.addShape(p.ShapeType.rect, { x: 0.5, y: 1.05, w: 12.33, h: 0.04, fill: { color
 const r = Math.min(8.2 / 2024, 5.05 / 1232);
 s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.8, w: 8.2, h: 5.05, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: TEAL, width: 1.25 } });
 s.addImage({ path: "assets/speedup_chart.png", x: 0.5 + (8.2 - 2024 * r) / 2, y: 1.8 + (5.05 - 1232 * r) / 2, w: 2024 * r, h: 1232 * r });
+s.addText("Workload distribution: Equal for P ≤ 4, Adaptive for P > 4.", { x: 0.5, y: 6.9, w: 8.2, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 13, italic: true, color: "6B4FA3", margin: 0 });
 const items = ["LBG speedup reaches 9.19× on 14 processes.",
   "Near-linear for P ≤ 6, where only P-cores are used.",
   "The slope drops once the slower E-cores join.",
