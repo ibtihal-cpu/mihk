@@ -62,7 +62,7 @@ module.exports.make = function (p) {
     // 5 parallel processing
     s = p.addSlide(); hdr(s, "Introduction", "Parallel Processing in Image Compression", PURPLE);
     s.addText("Parallel processing improves processing speed and efficiency when handling large data.", { x: 0.7, y: 1.4, w: 11.9, h: 1.0, valign: "middle", fontFace: "Cambria", fontSize: 24, italic: true, color: DEEP, margin: 0 });
-    card(s, 0.7, 2.7, 3.85, 3.4, ORG, "LBG training dominates", "In the sequential program it takes about 77% (gray) and 81% (color) of the total time.", 22, 17);
+    card(s, 0.7, 2.7, 3.85, 3.4, ORG, "LBG training dominates", "It is the most time-consuming stage of the sequential program, so it is the stage worth parallelizing.", 22, 17);
     card(s, 4.75, 2.7, 3.85, 3.4, PURPLE, "Data-parallel", "Each training vector is assigned to its nearest codeword independently, so the work can be split across processes.", 22, 17);
     card(s, 8.8, 2.7, 3.85, 3.4, TEAL, "Hybrid CPU", "P-cores and E-cores have different speeds, so an equal split can leave fast cores waiting.", 22, 17);
 
@@ -93,7 +93,7 @@ module.exports.make = function (p) {
     // 8 problem
     s = p.addSlide(); hdr(s, "Problem Statement", "Problem Statement", MAG, 2.5);
     const probs = ["Transmitting and storing uncompressed images consumes bandwidth and storage capacity.",
-      "LBG vector quantization gives a compact representation, but codebook training is computationally expensive: it repeatedly computes distances between training vectors and codewords (about 77% of the sequential time, gray images).",
+      "LBG vector quantization gives a compact representation, but codebook training is computationally expensive: it repeatedly computes distances between training vectors and codewords.",
       "On a hybrid CPU, an equal distribution of training vectors causes workload imbalance: the faster P-cores finish early and wait for the slower E-cores at synchronization points."];
     probs.forEach((t, i) => {
       const y = 1.4 + i * 1.35;
