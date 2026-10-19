@@ -19,7 +19,7 @@ for p,e,a,g in zip(P,EQ,AD,G):
         ax.annotate(f"{a:.2f}×",(p,a),textcoords="offset points",xytext=(0,12),ha="center",fontsize=12.5,fontweight="bold",color=PURPLE)
         ax.annotate(f"{e:.2f}×",(p,e),textcoords="offset points",xytext=(0,-24),ha="center",fontsize=12.5,fontweight="bold",color=ORG)
         ax.annotate("",xy=(p+0.33,a),xytext=(p+0.33,e),arrowprops=dict(arrowstyle="<->",color=MAG,lw=1.8))
-        ax.text(p+0.42,(a+e)/2,f"−{g:.1f}%",fontsize=11.5,color=MAG,fontweight="bold",va="center")
+        ax.text(p+0.42,(a+e)/2+0.35,f"{g:.1f}%",fontsize=12.5,color=MAG,fontweight="bold",va="center",bbox=dict(boxstyle="round,pad=0.15",fc="white",ec="none",alpha=0.9))
 ax.set_xlim(1.5,15.2);ax.set_ylim(0,15);ax.set_xticks(P)
 ax.set_xlabel("Number of MPI processes (P)",fontsize=15);ax.set_ylabel("LBG speedup",fontsize=15)
 ax.tick_params(labelsize=13);ax.grid(alpha=.3)
