@@ -35,7 +35,7 @@
     ],
     [
      "Assign",
-     "nearest codeword\non each rank"
+     "nearest codeword\non each process"
     ],
     [
      "Combine",
@@ -86,20 +86,15 @@
     [
      "Reconstruction",
      "codebook\nlookup"
-    ],
-    [
-     "Metrics",
-     "CR, BPP, MSE, PSNR\n(Rank 0)\nSSIM (parallel)"
     ]
    ],
-   "tag": "mix",
-   "parstep": 3
+   "tag": "seq"
   }
  ],
  "footer": "",
  "between": [
   "16,384 training vectors per channel (16-D)",
-  "codebook C + index array L (gathered on Rank 0)",
+  "codebook C + index array L (gathered on Process 0)",
   "accounted size: codebook + Huffman table + coded indices"
  ]
 }

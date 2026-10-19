@@ -141,12 +141,12 @@ module.exports.make = function (p) {
       "The speed-aware (Adaptive) distribution reduced LBG time by 17.2–28.3% compared with Equal distribution (P = 8 to 14).",
       "The parallel results were identical to the sequential ones: same reconstructed images and quality metrics.",
       "Quality: mean PSNR 29.49 dB and SSIM 0.8266 (gray); 28.80 dB and 0.7654 (color), at a compression ratio of ___ (gray) and ___ (color).",
-      "The total speedup is limited by the work that runs on Rank 0, mainly image reading and file output."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
+      "The total speedup is limited by the work that runs on Process 0, mainly image reading and file output."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
     s = p.addSlide(); hdr(s, "Future Work", "Future Work", DEEP, 2.3);
     bullets(s, ["Improve the rate–distortion performance: color transform (YCbCr instead of RGB), prediction or context modeling of the VQ indices, and variable block sizes.",
       "Accelerate the LBG assignment step, which dominates the run time, with GPUs (CUDA or OpenCL) combined with MPI.",
       "Scale to multi-node clusters, larger images and image sequences that share one codebook.",
-      "Rebalance the workload during the run, using the measured compute time of each rank and a load-imbalance measure."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 22);
+      "Rebalance the workload during the run, using the measured compute time of each process and a load-imbalance measure."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 22);
     s = p.addSlide(); hdr(s, "References", "References", DEEP, 2.3);
     bullets(s, ["[6] Thomas, S., Krishna, A., Govind, S., Sahu, A.K. (2025). A novel image compression method using wavelet coefficients and Huffman coding. J. Eng. Res., 13(1): 361-370.",
       "[16] Ranjan, R., Kumar, P. (2023). An improved image compression algorithm using 2D DWT and PCA with canonical Huffman encoding. Entropy, 25(10): 1382.",

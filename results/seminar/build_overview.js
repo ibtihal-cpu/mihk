@@ -5,7 +5,7 @@ const s = p.addSlide(); s.background = { color: "FFFFFF" };
 const INK = "1F1A33";
 const lines = (txt, opt) => txt.split("\n").map((t, i, a) => ({ text: t, options: Object.assign({ breakLine: i < a.length - 1 }, opt) }));
 const PAR="E07B22", SEQ="5B6770";
-const chip=(x,y,w,tag)=>{const c=tag==="par"?PAR:SEQ;s.addShape(p.ShapeType.roundRect,{x,y,w,h:0.28,rectRadius:0.14,fill:{color:c},line:{color:"FFFFFF",width:1}});s.addText(tag==="par"?"PARALLEL: all ranks":"SEQUENTIAL: Rank 0",{x,y,w,h:0.28,align:"center",valign:"middle",fontFace:"Calibri",fontSize:11,bold:true,color:"FFFFFF",margin:0});};
+const chip=(x,y,w,tag)=>{const c=tag==="par"?PAR:SEQ;s.addShape(p.ShapeType.roundRect,{x,y,w,h:0.28,rectRadius:0.14,fill:{color:c},line:{color:"FFFFFF",width:1}});s.addText(tag==="par"?"PARALLEL: all processes":"SEQUENTIAL: Process 0",{x,y,w,h:0.28,align:"center",valign:"middle",fontFace:"Calibri",fontSize:11,bold:true,color:"FFFFFF",margin:0});};
 const top = 0.25, rowH = 1.45, gap = 0.33, hx = 0.4, hw = 2.45, bx0 = 3.05, bw = 2.2, arrow = 0.3;
 spec.stages.forEach((st, i) => {
   const y = top + i * (rowH + gap);
@@ -14,7 +14,7 @@ spec.stages.forEach((st, i) => {
   s.addText([{ text: st.name, options: { fontSize: 22, bold: true, breakLine: true } }].concat(lines(st.sub, { fontSize: 15 })),
     { x: hx, y, w: hw, h: rowH - 0.35, align: "center", valign: "middle", fontFace: "Calibri", color: "FFFFFF", margin: 0.06 });
   s.addShape(p.ShapeType.roundRect,{x:hx+0.12,y:y+rowH-0.4,w:hw-0.24,h:0.32,rectRadius:0.16,fill:{color:"FFFFFF"},line:{color:"FFFFFF",width:0}});
-  s.addText(st.tag==="par"?"PARALLEL: all ranks":st.tag==="mix"?"Rank 0 | Parallel: SSIM":"SEQUENTIAL: Rank 0",{x:hx+0.12,y:y+rowH-0.4,w:hw-0.24,h:0.32,align:"center",valign:"middle",fontFace:"Calibri",fontSize:st.tag==="mix"?11:12,bold:true,color:st.tag==="par"?PAR:SEQ,margin:0});
+  s.addText(st.tag==="par"?"PARALLEL: all processes":st.tag==="mix"?"SEQUENTIAL: Process 0":"SEQUENTIAL: Process 0",{x:hx+0.12,y:y+rowH-0.4,w:hw-0.24,h:0.32,align:"center",valign:"middle",fontFace:"Calibri",fontSize:st.tag==="mix"?11:12,bold:true,color:st.tag==="par"?PAR:SEQ,margin:0});
   st.steps.forEach((t, j) => {
     const x = bx0 + j * (bw + arrow);
     s.addShape(p.ShapeType.roundRect, { x, y: y + 0.1, w: bw, h: rowH - 0.2, rectRadius: 0.08, fill: { color: st.parstep === j ? "FDEBD9" : "FFFFFF" }, line: { color: st.parstep === j ? PAR : st.color, width: st.parstep === j ? 2.5 : 1.5, dashType: st.parstep === j ? "dash" : "solid" } });
@@ -29,5 +29,5 @@ spec.stages.forEach((st, i) => {
   }
 });
 const lg=(x,tag,txt)=>{s.addShape(p.ShapeType.roundRect,{x,y:7.08,w:0.5,h:0.24,rectRadius:0.12,fill:{color:tag==="par"?PAR:SEQ},line:{color:"FFFFFF",width:0}});s.addText(txt,{x:x+0.6,y:7.06,w:4.2,h:0.28,fontFace:"Calibri",fontSize:13,bold:true,color:"1F1A33",margin:0,valign:"middle"});};
-lg(2.6,"par","Parallel: all MPI ranks work together");lg(7.4,"seq","Sequential: executed on Rank 0 only");
+lg(2.6,"par","Parallel: all MPI processes work together");lg(7.4,"seq","Sequential: executed on Process 0 only");
 p.writeFile({ fileName: "figs/overview.pptx" }).then(() => console.log("ok"));

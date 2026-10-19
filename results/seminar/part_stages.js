@@ -16,7 +16,7 @@ const lines = (txt, opt) => txt.split("\n").map((t, i, a) => ({ text: t, options
     s.addText([{ text: st.name, options: { fontSize: 22, bold: true, breakLine: true } }].concat(lines(st.sub, { fontSize: 15 })),
       { x: hx, y, w: hw, h: rowH - 0.35, align: "center", valign: "middle", fontFace: "Calibri", color: "FFFFFF", margin: 0.06 });
     s.addShape(p.ShapeType.roundRect, { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, rectRadius: 0.16, fill: { color: "FFFFFF" }, line: { color: "FFFFFF", width: 0 } });
-    s.addText(st.tag === "par" ? "PARALLEL: all ranks" : st.tag === "mix" ? "Rank 0 | Parallel: SSIM" : "SEQUENTIAL: Rank 0", { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, align: "center", valign: "middle", fontFace: "Calibri", fontSize: st.tag === "mix" ? 11 : 12, bold: true, color: st.tag === "par" ? PAR : SEQ, margin: 0 });
+    s.addText(st.tag === "par" ? "PARALLEL: all processes" : st.tag === "mix" ? "SEQUENTIAL: Process 0" : "SEQUENTIAL: Process 0", { x: hx + 0.12, y: y + rowH - 0.4, w: hw - 0.24, h: 0.32, align: "center", valign: "middle", fontFace: "Calibri", fontSize: st.tag === "mix" ? 11 : 12, bold: true, color: st.tag === "par" ? PAR : SEQ, margin: 0 });
     st.steps.forEach((t, j) => {
       const x = bx0 + j * (bw + arrow);
       s.addShape(p.ShapeType.roundRect, { x, y: y + 0.1, w: bw, h: rowH - 0.2, rectRadius: 0.08, fill: { color: st.parstep === j ? "FDEBD9" : "FFFFFF" }, line: { color: st.parstep === j ? PAR : st.color, width: st.parstep === j ? 2.5 : 1.5, dashType: st.parstep === j ? "dash" : "solid" } });
@@ -31,7 +31,7 @@ const lines = (txt, opt) => txt.split("\n").map((t, i, a) => ({ text: t, options
     }
   });
   const lg = (x, c, t) => { s.addShape(p.ShapeType.roundRect, { x, y: 7.08, w: 0.5, h: 0.24, rectRadius: 0.12, fill: { color: c }, line: { color: "FFFFFF", width: 0 } }); s.addText(t, { x: x + 0.6, y: 7.06, w: 4.2, h: 0.28, fontFace: "Calibri", fontSize: 13, bold: true, color: INK, margin: 0, valign: "middle" }); };
-  lg(2.6, PAR, "Parallel: all MPI ranks work together"); lg(7.4, SEQ, "Sequential: executed on Rank 0 only");
+  lg(2.6, PAR, "Parallel: all MPI processes work together"); lg(7.4, SEQ, "Sequential: executed on Process 0 only");
 })();
 
 // ---------- helpers for stage slides ----------
@@ -74,15 +74,15 @@ s = p.addSlide(); header(s, 2, "Stage 2", "Parallel LBG Training (MPI)");
 (function () {
   const im = { w: PW, h: PH };
   figure(s, 2, "figs/parallel_overview.png", PW, PH, { x: 0.5, y: 1.25, w: 12.33, h: 4.6 });
-  const items = [["SPMD: every rank runs the same program on its own chunk of vectors.", "Nearest-codeword assignment is local and is the main cost of LBG, which takes about 77% of the sequential time (gray)."],
-                 ["Allreduce combines sums, counts and distortion; every rank updates the same codebook.", "Gatherv collects the final indices on Rank 0."]];
+  const items = [["SPMD: every process runs the same program on its own chunk of vectors.", "Nearest-codeword assignment is local and is the main cost of LBG, which takes about 77% of the sequential time (gray)."],
+                 ["Allreduce combines sums, counts and distortion; every process updates the same codebook.", "Gatherv collects the final indices on Process 0."]];
   items.forEach((col, k) => bullets(s, 2, col, { x: 0.5 + k * 6.25, y: 5.95, w: 6.08, h: 1.35 }, 14));
 })();
 
 // ---------- Stage 2c ----------
 s = p.addSlide(); header(s, 2, "Stage 2", "Equal and Adaptive Workload Distribution");
 figure(s, 2, "assets/ch3_fig38.png", 1017, 601, FIG);
-bullets(s, 2, ["Equal (default, P ≤ 4): each rank gets N/P vectors (rounded down or up).", "Adaptive (P > 4): speed measured by calibration (3 trials, the first is a warm-up).", "q_r = N · s_r / Σ s_j: faster cores receive more vectors.", "Adaptive reduces LBG time by 17–28% compared with Equal (P = 8 to 14)."], TXT, 16);
+bullets(s, 2, ["Equal (default, P ≤ 4): each process gets N/P vectors (rounded down or up).", "Adaptive (P > 4): speed measured by calibration (3 trials, the first is a warm-up).", "q_r = N · s_r / Σ s_j: faster cores receive more vectors.", "Adaptive reduces LBG time by 17–28% compared with Equal (P = 8 to 14)."], TXT, 16);
 
 // ---------- Stage 3a ----------
 s = p.addSlide(); header(s, 3, "Stage 3", "Delta Coding");
@@ -111,6 +111,6 @@ s.addImage({ path: "assets/cam_rec.png", x: 3.95, y: 2.55, w: 3.2, h: 3.2 });
 s.addText("Original", { x: 0.5, y: 5.78, w: 3.2, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 14, bold: true, color: INK, margin: 0 });
 s.addText("Reconstructed", { x: 3.95, y: 5.78, w: 3.2, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 14, bold: true, color: INK, margin: 0 });
 s.addText("Cameraman: PSNR 29.75 dB, SSIM 0.8855", { x: 0.5, y: 6.15, w: 6.65, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 13, italic: true, color: "6B4FA3", margin: 0 });
-bullets(s, 4, ["Decoding and reconstruction run on Rank 0.", "Quality: MSE, PSNR and SSIM (SSIM is computed in parallel); size: CR and BPP.", "Parallel performance: time, speedup, efficiency, throughput, Karp–Flatt.", "Verification: the reconstructed image (MD5) and the metrics are identical for the sequential run, P = 4, and P = 14 (Adaptive and Equal)."], { x: 7.5, y: 2.55, w: 5.35, h: 4.25 }, 16);
+bullets(s, 4, ["Decoding and reconstruction run on Process 0.", "Quality: MSE, PSNR and SSIM (SSIM is computed in parallel); size: CR and BPP.", "Parallel performance: time, speedup, efficiency, throughput, Karp–Flatt.", "Verification: the reconstructed image (MD5) and the metrics are identical for the sequential run, P = 4, and P = 14 (Adaptive and Equal)."], { x: 7.5, y: 2.55, w: 5.35, h: 4.25 }, 16);
 
 };
