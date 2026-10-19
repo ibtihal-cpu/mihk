@@ -74,7 +74,7 @@ module.exports.make = function (p) {
     [["[6]", "Lena", "Thomas et al.", "1.52", "54.28", "–", 0, "Wavelet coefficients + Huffman coding"], ["[16]", "Lena", "Ranjan and Kumar", "4.41", "34.78", "–", 0, "2D DWT + PCA + canonical Huffman"], ["", "", "This work", "23.50", "29.67", "9.21×", 1, "LBG-VQ + delta + Huffman"],
      ["[6]", "Boat", "Thomas et al.", "1.41", "54.07", "–", 0, "Wavelet coefficients + Huffman coding"], ["", "", "This work", "26.54", "29.11", "9.22×", 1, "LBG-VQ + delta + Huffman"],
      ["[17]", "Cameraman", "Bilal et al.", "–", "25.3–26.8*", "2.61×", 0, "FLBG (LBG with bilinear rescaling)"], ["", "", "This work", "28.88", "29.75", "9.10×", 1, "LBG-VQ + delta + Huffman"]].forEach((a, i) => add(a, a[6] ? L : W));
-    s.addNotes("CR values of 'This work' come from the previous Huffman-table accounting. Replace them with the CR column of correctness.csv after the rerun (expected change about -1.2%). Source values checked against the papers: [6] Table 1 and Table 3; [16] Table 1; [17] Table 1 (Cameraman, FLBG).");
+    s.addNotes("CR values of 'This work' are those of the original (approved) implementation, thesis Tables 4.5 and 4.6. Source values checked against the papers: [6] Table 1 and Table 3; [16] Table 1; [17] Table 1 (Cameraman, FLBG).");
     s.addTable(rows, { x: 0.7, y: 1.35, w: 11.9, colW: [0.9, 1.5, 2.2, 4.0, 1.4, 1.9], rowH: 0.5, fontFace: "Calibri", border: { type: "solid", color: "E2D9F3", pt: 1 }, valign: "middle" });
     s.addText("[16]: Lena 512 × 512, Table 1 (CR 4.4058, PSNR 34.7809 dB). [6]: near-lossless scheme. * [17]: FLBG PSNR over 0.15–0.625 bpp (CR not reported).",
       { x: 0.7, y: 5.55, w: 11.9, h: 0.8, fontFace: "Calibri", fontSize: 12, italic: true, color: PURPLE, margin: 0 });
@@ -140,7 +140,7 @@ module.exports.make = function (p) {
       "LBG training was parallelized with MPI: 9.19× speedup on 14 processes (efficiency ≈ 66%); total speedup 5.00× (gray) and 6.84× (color).",
       "The speed-aware (Adaptive) distribution reduced LBG time by 17.2–28.3% compared with Equal distribution (P = 8 to 14).",
       "The parallel results were identical to the sequential ones: same reconstructed images and quality metrics.",
-      "Quality: mean PSNR 29.49 dB and SSIM 0.8266 (gray); 28.80 dB and 0.7654 (color), at a compression ratio of ___ (gray) and ___ (color).",
+      "Quality: mean PSNR 29.49 dB and SSIM 0.8266 (gray); 28.80 dB and 0.7654 (color), at a mean compression ratio of 25.92 (gray) and 24.47 (color).",
       "The total speedup is limited by the work that runs on Process 0, mainly image reading and file output."], { x: 0.7, y: 1.4, w: 11.95, h: 5.5 }, DEEP, 19);
     s = p.addSlide(); hdr(s, "Future Work", "Future Work", DEEP, 2.3);
     bullets(s, ["Improve the rate–distortion performance: color transform (YCbCr instead of RGB), prediction or context modeling of the VQ indices, and variable block sizes.",

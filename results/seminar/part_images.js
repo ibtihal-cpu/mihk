@@ -26,8 +26,8 @@ for (let r = 0; r < 2; r++) {
 }
 // ---- original vs reconstructed ----
 const data = {
-  gray: [["Lena", "29.67", "0.8190"], ["Boat", "29.11", "0.8394"], ["Cameraman", "29.75", "0.8855"], ["Peppers", "29.41", "0.7624"]],
-  color: [["Lena", "28.91", "0.7594"], ["Peppers", "28.35", "0.6964"], ["F16", "29.47", "0.8539"], ["Gold Hill", "28.45", "0.7520"]]
+  gray: [["Lena", "29.67", "0.8190", "23.50", "0.340"], ["Boat", "29.11", "0.8394", "26.54", "0.301"], ["Cameraman", "29.75", "0.8855", "28.88", "0.277"], ["Peppers", "29.41", "0.7624", "24.75", "0.323"]],
+  color: [["Lena", "28.91", "0.7594", "24.00", "1.000"], ["Peppers", "28.35", "0.6964", "23.89", "1.005"], ["F16", "29.47", "0.8539", "26.44", "0.908"], ["Gold Hill", "28.45", "0.7520", "23.54", "1.020"]]
 };
 function gridSlide(kind) {
   const label = kind === "gray" ? "Grayscale Images" : "Color Images";
@@ -35,12 +35,12 @@ function gridSlide(kind) {
   const sz = 2.55, x0 = 1.75, gx = 0.15, yO = 1.55, yR = 4.2;
   s.addText("Original", { x: 0.45, y: yO, w: 1.2, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 14, bold: true, color: DEEP, margin: 0 });
   s.addText("Reconstructed", { x: 0.35, y: yR, w: 1.35, h: sz, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 13, bold: true, color: DEEP, margin: 0 });
-  data[kind].forEach(([nm, psnr, ssim], c) => {
+  data[kind].forEach(([nm, psnr, ssim, cr, bpp], c) => {
     const x = x0 + c * (sz + gx);
     s.addText(nm, { x, y: 1.18, w: sz, h: 0.33, align: "center", fontFace: "Calibri", fontSize: 17, bold: true, color: TEAL, margin: 0 });
     frame(s, x, yO, sz, sz, "Original");
     frame(s, x, yR, sz, sz, "Reconstructed");
-    s.addText([{ text: "CR = ___", options: { color: MAG, bold: true, breakLine: true } }, { text: `PSNR ${psnr} dB   SSIM ${ssim}`, options: { color: INK } }],
+    s.addText([{ text: `CR ${cr}   BPP ${bpp}`, options: { color: MAG, bold: true, breakLine: true } }, { text: `PSNR ${psnr} dB   SSIM ${ssim}`, options: { color: INK } }],
       { x: x - 0.1, y: yR + sz + 0.03, w: sz + 0.2, h: 0.5, align: "center", fontFace: "Calibri", fontSize: 13, margin: 0 });
   });
 }
