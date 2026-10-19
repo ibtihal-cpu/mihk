@@ -724,8 +724,10 @@ static int run_grayscale(const char *image_path)
 
     float *training_f = (float*)malloc((size_t)num_vectors * VLEN * sizeof(float));
     if (!training_f) { perror("malloc training_f"); exit(1); }
+    double t_f32a = wtime();
     for (int i = 0; i < num_vectors * VLEN; i++)
         training_f[i] = (float)training_set[i];
+    double tt_f32 = wtime() - t_f32a;
 
     clock_t t_lbg0_cpu = clock();
     double  t_lbg0     = wtime();
@@ -851,7 +853,7 @@ static int run_grayscale(const char *image_path)
     double tt_psnr   = t_psnr1  - t_psnr0;
     double tt_ssim   = t_s1     - t_s0;
     double tt_total  = t_total1 - t_total0;
-    double tt_proc   = tt_build + tt_lbg + tt_cvt + tt_delta + tt_huff + tt_dd + tt_rec;   /* v7 */
+    double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_delta + tt_huff + tt_dd + tt_rec;   /* v7: same stages as the parallel/colour paths (no codebook u8 conversion) */
 
     double tt_sum = tt_read + tt_build + tt_lbg + tt_ent + tt_cvt +
                     tt_dec + tt_delta + tt_huff + tt_dd + tt_rec +

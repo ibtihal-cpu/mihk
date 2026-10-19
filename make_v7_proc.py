@@ -49,7 +49,12 @@ open("pam_v7_proc.c", "w").write(head + gray + color + tail)
 # ---------------- sequential ----------------
 s = open("sem_v3_nofilter_final.c").read()
 s = rep(s, "    double tt_total  = t_total1 - t_total0;\n",
-        "    double tt_total  = t_total1 - t_total0;\n    double tt_proc   = tt_build + tt_lbg + tt_cvt + tt_delta + tt_huff + tt_dd + tt_rec;   /* v7 */\n")
+        "    double tt_total  = t_total1 - t_total0;\n    double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_delta + tt_huff + tt_dd + tt_rec;   /* v7: same stages as the parallel/colour paths (no codebook u8 conversion) */\n")
+_g0 = s.index("static int run_grayscale"); _g1 = s.index("static ChannelResult process_channel") if s.index("static ChannelResult process_channel") > _g0 else len(s)
+_gray = s[_g0:_g1]
+_gray = rep(_gray, "    for (int i = 0; i < num_vectors * VLEN; i++)\n        training_f[i] = (float)training_set[i];\n",
+            "    double t_f32a = wtime();\n    for (int i = 0; i < num_vectors * VLEN; i++)\n        training_f[i] = (float)training_set[i];\n    double tt_f32 = wtime() - t_f32a;\n")
+s = s[:_g0] + _gray + s[_g1:]
 s = rep(s, '    printf("  Total (measured)         : %.4f s\\n", tt_total);\n',
         '    printf("  Total (measured)         : %.4f s\\n", tt_total);\n    printf("  Processing time (no I/O, no metrics): %.4f s\\n", tt_proc);\n')
 s = rep(s, "    double lbg_time;\n    int lbg_iters;\n    int compressed_bytes;", "    double lbg_time;\n    double proc_time;   /* v7 */\n    int lbg_iters;\n    int compressed_bytes;")
