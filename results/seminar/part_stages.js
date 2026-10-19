@@ -82,7 +82,7 @@ s = p.addSlide(); header(s, 2, "Stage 2", "Parallel LBG Training (MPI)");
 // ---------- Stage 2c ----------
 s = p.addSlide(); header(s, 2, "Stage 2", "Balanced and Unbalanced Workload Distribution");
 figure(s, 2, "figs/Workload_distribution.png", 2000, 1362, FIG);
-bullets(s, 2, ["Balanced = Equal split (default, P ≤ 4): each process gets N/P vectors.", "Unbalanced = Adaptive split (P > 4): chunk sizes follow the core speed measured by calibration (3 trials, the first is a warm-up).", "q_r = N · s_r / Σ s_j: faster cores receive more vectors.", "Adaptive reduces LBG time by 17–28% compared with Equal (P = 8 to 14)."], TXT, 16);
+bullets(s, 2, ["Balanced (Equal), P ≤ 4: each process gets N/P training vectors.", "Unbalanced (Adaptive), P > 4: each process gets a share proportional to its measured speed.", "Share of process r: q_r = N · s_r / Σ s_j, where s_r is the speed of process r.", "Speed s_r is measured once by a short calibration run (3 trials, the first is a warm-up)."], TXT, 16);
 
 // ---------- Stage 3a ----------
 s = p.addSlide(); header(s, 3, "Stage 3", "Delta Coding");
