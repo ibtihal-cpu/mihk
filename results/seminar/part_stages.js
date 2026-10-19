@@ -99,12 +99,12 @@ bullets(s, 3, ["Frequent symbols receive shorter codewords, rare symbols longer 
 
 // ---------- Stage 4 ----------
 s = p.addSlide(); header(s, 4, "Stage 4", "Decoding and Evaluation");
-const chips = ["Huffman decoding", "Inverse delta", "Codebook lookup", "Reconstructed image"];
-chips.forEach((t, i) => {
-  const x = 0.5 + i * 3.1;
-  s.addShape(p.ShapeType.roundRect, { x, y: 1.35, w: 2.7, h: 0.8, rectRadius: 0.08, fill: { color: "ECE6F6" }, line: { color: COL[4], width: 1.5 } });
-  s.addText(t, { x, y: 1.35, w: 2.7, h: 0.8, align: "center", valign: "middle", fontFace: "Calibri", fontSize: 16, bold: true, color: COL[4], margin: 0 });
-  if (i < 3) s.addShape(p.ShapeType.rightArrow, { x: x + 2.73, y: 1.62, w: 0.34, h: 0.26, fill: { color: INK }, line: { color: INK, width: 0 } });
+const chips = [["1. Huffman decoding", "bit stream → delta values", "2A9D8F"], ["2. Inverse delta", "deltas → VQ indices", "2F6DB5"], ["3. Codebook lookup", "index → 4×4 block", "E07B22"], ["4. Reconstructed image", "blocks → 512×512 image", "6B4FA3"]];
+chips.forEach((c, i) => {
+  const x = 0.5 + i * 3.2;
+  s.addShape(p.ShapeType.roundRect, { x, y: 1.25, w: 2.8, h: 1.05, rectRadius: 0.1, fill: { color: c[2] }, line: { color: c[2], width: 0 } });
+  s.addText([{ text: c[0], options: { fontSize: 16, bold: true, breakLine: true } }, { text: c[1], options: { fontSize: 12.5 } }], { x, y: 1.25, w: 2.8, h: 1.05, align: "center", valign: "middle", fontFace: "Calibri", color: "FFFFFF", margin: 0.05 });
+  if (i < 3) s.addShape(p.ShapeType.rightArrow, { x: x + 2.83, y: 1.65, w: 0.34, h: 0.26, fill: { color: INK }, line: { color: INK, width: 0 } });
 });
 s.addImage({ path: "assets/cam_orig.png", x: 0.5, y: 2.55, w: 3.2, h: 3.2 });
 s.addImage({ path: "assets/cam_rec.png", x: 3.95, y: 2.55, w: 3.2, h: 3.2 });
