@@ -12,15 +12,15 @@ def arrow(x1,y1,x2,y2,col=INK,lw=1.4):
 # top
 box(2.2,0.1,3.6,0.5,"#E4EEFA",BLUE,2)
 ax.text(4,0.35,"Training vectors (N = 16,384)",ha="center",va="center",fontsize=11.5,fontweight="bold",color=BLUE)
-panels=[(0.1,"Balanced workload","Equal split: N/P vectors per process","#EAF3FB",BLUE,[0.78]*4,
+panels=[(0.1,"Balanced workload (Equal)","Each process gets N/P vectors","#EAF3FB",BLUE,[0.78]*4,
          "All chunks have the same size.\nP-cores finish first and wait for E-cores."),
-        (4.1,"Unbalanced workload","Adaptive split: size proportional to core speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
+        (4.1,"Unbalanced workload (Adaptive)","Chunk size proportional to core speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
          "Faster cores get more vectors,\nso processes finish at about the same time.")]
 cores=[("P-core",BLUE),("P-core",BLUE),("E-core",TEAL),("E-core",TEAL)]
 for px,title,sub,fc,ec,sizes,note in panels:
     pw=3.8
     box(px,0.95,pw,4.1,fc,ec,2,0.1,"--")
-    ax.text(px+pw/2,1.25,title,ha="center",va="center",fontsize=14,fontweight="bold",color=ec)
+    ax.text(px+pw/2,1.25,title,ha="center",va="center",fontsize=13,fontweight="bold",color=ec)
     ax.text(px+pw/2,1.58,sub,ha="center",va="center",fontsize=8.6,color=INK,style="italic")
     top.__class__ if False else None
     # arrow from top box
