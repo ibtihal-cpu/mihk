@@ -8,13 +8,13 @@ s.addShape(p.ShapeType.rect, { x: 0.5, y: 1.05, w: 12.33, h: 0.04, fill: { color
 const r = Math.min(8.2 / 2024, 5.5 / 1232);
 s.addShape(p.ShapeType.roundRect, { x: 0.5, y: 1.35, w: 8.2, h: 5.5, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: TEAL, width: 1.25 } });
 s.addImage({ path: "assets/eqad_chart.png", x: 0.5 + (8.2 - 2024 * r) / 2, y: 1.35 + (5.5 - 1232 * r) / 2, w: 2024 * r, h: 1232 * r });
-const items = ["With Equal distribution, the faster P-cores finish early and wait for the E-cores: 7.61× at P = 14.",
-  "Adaptive distribution reaches 9.19× at P = 14.",
+const items = ["Equal: the faster P-cores finish early and wait for the E-cores (LBG speedup 7.61× at P = 14).",
+  "Adaptive: faster cores receive more vectors (9.19× at P = 14).",
   "LBG time is reduced by 28.3%, 23.6%, 19.8% and 17.2% at P = 8, 10, 12 and 14.",
-  "Total time is reduced by 17.9% to 8.8%.",
-  "No adaptive-distribution benefit was observed when only P-cores were used (P ≤ 6).",
-  "The reconstructed images are identical in both cases.",
-  "Adaptive values here come from the Equal-vs-Adaptive runs, so they can differ by up to 0.02× from the main speedup runs."];
+  "Total time is reduced by 17.9% at P = 8 and 8.8% at P = 14, since the stages outside LBG are not affected.",
+  "No benefit for P ≤ 6, where only P-cores are used.",
+  "The reconstructed images are identical in both cases."];
+s.addText("Adaptive values come from the Equal-vs-Adaptive runs and differ by up to 0.02× from the main speedup runs.", { x: 0.5, y: 6.92, w: 8.2, h: 0.3, align: "center", fontFace: "Calibri", fontSize: 12, italic: true, color: "6B4FA3", margin: 0 });
 s.addShape(p.ShapeType.roundRect, { x: 8.95, y: 1.35, w: 3.9, h: 5.5, rectRadius: 0.08, fill: { color: MIST }, line: { color: MIST, width: 0 } });
 s.addText(items.map((t, i) => ({ text: t, options: { bullet: { code: "25A0", color: TEAL }, breakLine: i < items.length - 1, paraSpaceAfter: 8 } })),
   { x: 9.05, y: 1.45, w: 3.7, h: 5.3, valign: "top", fontFace: "Calibri", fontSize: 15, color: INK, margin: 0.08 });
