@@ -66,8 +66,8 @@ for k, s in leaf.items():
     ax.text(px, py - 1.17, tree_code[s], ha="center", va="center", fontsize=14.5, fontweight="bold", color=BLUE, family="monospace")
 
 ax.add_patch(FancyArrowPatch((9.75, 3.0), (10.2, 3.0), arrowstyle="-|>", mutation_scale=1, lw=0))
-ax.text(10.0, 0.45, f"Coded size = Σ f·l = {bits} bits (fixed 3-bit code: {3 * N} bits)    L = {avg:.2f} bits/symbol    H = {H:.2f} bits/symbol",
-        ha="center", va="center", fontsize=12.5, color=DEEP, fontweight="bold")
+ax.text(10.0, 0.45, f"Huffman-encoded payload = Σ f·l = {bits} bits (header not included; fixed 3-bit code: {3 * N} bits)    L = {avg:.2f}    H = {H:.2f} bits/symbol",
+        ha="center", va="center", fontsize=11.6, color=DEEP, fontweight="bold")
 ax.text(10.0, -0.05, "Illustrative example: same structure as the example in [ref], with the delta symbols of this work. Canonical codes have the same lengths and need only (symbol, length) in the header.",
         ha="center", va="center", fontsize=9.2, color="#5B6770", style="italic")
 plt.savefig("figs/huffman_example_tree.png", bbox_inches="tight", facecolor="white")
