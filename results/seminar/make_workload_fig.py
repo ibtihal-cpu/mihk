@@ -14,7 +14,7 @@ box(2.2,0.1,3.6,0.5,"#E4EEFA",BLUE,2)
 ax.text(4,0.35,"Training vectors (N = 16,384)",ha="center",va="center",fontsize=11.5,fontweight="bold",color=BLUE)
 panels=[(0.1,"Equal Vector Distribution","Same number of vectors per process (N/P)","#EAF3FB",BLUE,[0.78]*4,
          "All chunks have the same size. On a mix of P- and E-cores,\nthe P-cores finish first and wait for the E-cores."),
-        (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
+        (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.58,0.44],
          "Faster cores get more vectors,\nso processes finish at about the same time.")]
 cores=[("P-core",BLUE),("P-core",BLUE),("E-core",TEAL),("E-core",TEAL)]
 for px,title,sub,fc,ec,sizes,note in panels:
@@ -42,5 +42,5 @@ for px,title,sub,fc,ec,sizes,note in panels:
     box(px+pw/2-1.2,4.15,2.4,0.36,PUR,PUR,1,0.05)
     ax.text(px+pw/2,4.33,"MPI_Allreduce (all processes)",ha="center",va="center",fontsize=8.6,fontweight="bold",color="white")
     ax.text(px+pw/2,4.78,note,ha="center",va="center",fontsize=7.8,color=INK,linespacing=1.25)
-ax.text(4,5.3,"Every process assigns its own vectors; the partial sums are combined by Allreduce (illustrative chunk sizes)",ha="center",va="center",fontsize=7.4,color="#5B6770",style="italic")
+ax.text(4,5.3,"Each chunk size follows the speed measured for that process; the partial sums are combined by Allreduce (illustrative sizes)",ha="center",va="center",fontsize=7.4,color="#5B6770",style="italic")
 fig.savefig("figs/Workload_distribution.png")
