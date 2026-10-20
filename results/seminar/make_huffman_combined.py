@@ -3,7 +3,7 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyBboxPatch, FancyArrowPatch
 
-INK = "#1F1A33"; DEEP = "#2E2055"; MAG = "#D81B60"; TEAL = "#00897B"; BLUE = "#1565C0"; PUR = "#5E35B1"; ORG = "#F57C00"; YEL = "#FFE082"
+INK = "#1F1A33"; DEEP = "#2E2055"; MAG = "#E0457B"; TEAL = "#2A9D8F"; BLUE = "#2F6DB5"; PUR = "#6B4FA3"; ORG = "#2A9D8F"; YEL = "white"
 
 # Example with the structure of the example of the cited paper (frequencies 7, 6, 5, 2, 1) and the delta symbols of this work
 freq = {126: 2, 127: 6, 128: 7, 129: 5, 130: 1}
@@ -32,7 +32,7 @@ for x, w, t, col in zip(xs, ws, cols, cc):
 for r, s in enumerate(syms):
     y = 4.85 - r * 0.8
     ax.add_patch(FancyBboxPatch((0.1, y - 0.35), 9.5, 0.7, boxstyle="round,pad=0.01,rounding_size=0.1",
-                                fc="#B2DFDB" if r % 2 == 0 else "#E0F2F1", ec="none"))
+                                fc="#E1F2EF" if r % 2 == 0 else "white", ec="none"))
     vals = [str(s), str(freq[s]), tree_code[s], canon[s]]
     for i, (x, v) in enumerate(zip(xs, vals)):
         ax.text(x, y, v, ha="center", va="center", fontsize=16, family="monospace" if i != 1 else None,
@@ -52,7 +52,7 @@ P = lambda x, y: (ox + x * sx, oy + y * sy - 0.4)
 ax.text(ox + 4.65, 8.25, "Huffman tree (left branch 0, right branch 1)", ha="center", va="center", fontsize=14, color=DEEP, fontweight="bold")
 for a, b, lab in edges:
     xa, ya = P(*nodes[a][:2]); xb, yb = P(*nodes[b][:2])
-    ax.plot([xa, xb], [ya - 0.3, yb + 0.3], color="#37474F", lw=3.6, zorder=1)
+    ax.plot([xa, xb], [ya - 0.3, yb + 0.3], color="#7F8FA9", lw=3, zorder=1)
     ax.text((xa + xb) / 2 + (-0.28 if lab == "0" else 0.28), (ya + yb) / 2 + 0.1, lab, ha="center", va="center",
             fontsize=15, fontweight="bold", color=MAG, bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none"))
 for k, (x, y, t, col) in nodes.items():
@@ -61,7 +61,7 @@ for k, (x, y, t, col) in nodes.items():
     ax.text(px, py, t, ha="center", va="center", color="white", fontsize=15, fontweight="bold", zorder=4)
 for k, s in leaf.items():
     px, py = P(*nodes[k][:2])
-    ax.add_patch(FancyBboxPatch((px - 0.62, py - 1.45), 1.24, 0.95, boxstyle="round,pad=0.02,rounding_size=0.12", fc=YEL, ec=ORG, lw=2.6, zorder=2))
+    ax.add_patch(FancyBboxPatch((px - 0.62, py - 1.45), 1.24, 0.95, boxstyle="round,pad=0.02,rounding_size=0.12", fc=YEL, ec=TEAL, lw=2.2, zorder=2))
     ax.text(px, py - 0.82, str(s), ha="center", va="center", fontsize=14.5, fontweight="bold", color=INK, family="monospace")
     ax.text(px, py - 1.17, tree_code[s], ha="center", va="center", fontsize=14.5, fontweight="bold", color=BLUE, family="monospace")
 
