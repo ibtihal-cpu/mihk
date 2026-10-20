@@ -12,15 +12,15 @@ def arrow(x1,y1,x2,y2,col=INK,lw=1.4):
 # top
 box(2.2,0.1,3.6,0.5,"#E4EEFA",BLUE,2)
 ax.text(4,0.35,"Training vectors (N = 16,384)",ha="center",va="center",fontsize=11.5,fontweight="bold",color=BLUE)
-panels=[(0.1,"Balanced workload (Equal)","Each process gets N/P vectors","#EAF3FB",BLUE,[0.78]*4,
-         "All chunks have the same size.\nP-cores finish first and wait for E-cores."),
-        (4.1,"Unbalanced workload (Adaptive)","Chunk size proportional to core speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
+panels=[(0.1,"Equal Vector Distribution","Same number of vectors per process (N/P)","#EAF3FB",BLUE,[0.78]*4,
+         "All chunks have the same size. On a mix of P- and E-cores,\nthe P-cores finish first and wait for the E-cores."),
+        (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
          "Faster cores get more vectors,\nso processes finish at about the same time.")]
 cores=[("P-core",BLUE),("P-core",BLUE),("E-core",TEAL),("E-core",TEAL)]
 for px,title,sub,fc,ec,sizes,note in panels:
     pw=3.8
     box(px,0.95,pw,4.1,fc,ec,2,0.1,"--")
-    ax.text(px+pw/2,1.25,title,ha="center",va="center",fontsize=13,fontweight="bold",color=ec)
+    ax.text(px+pw/2,1.25,title,ha="center",va="center",fontsize=11.6,fontweight="bold",color=ec)
     ax.text(px+pw/2,1.58,sub,ha="center",va="center",fontsize=8.6,color=INK,style="italic")
     top.__class__ if False else None
     # arrow from top box
@@ -38,9 +38,9 @@ for px,title,sub,fc,ec,sizes,note in panels:
         arrow(cx,3.07,cx,3.3)
         box(cx-0.4,3.32,0.8,0.5,"white",cc,2,0.05)
         ax.text(cx,3.57,cn,ha="center",va="center",fontsize=8.8,fontweight="bold",color=cc)
-        arrow(cx,3.82,px+pw/2,4.2,PUR,1.2)
-    box(px+pw/2-0.65,4.15,1.3,0.36,PUR,PUR,1,0.05)
-    ax.text(px+pw/2,4.33,"Process 0",ha="center",va="center",fontsize=9.2,fontweight="bold",color="white")
+        arrow(cx,3.82,px+pw/2+(cx-px-pw/2)*0.55,4.14,PUR,1.2)
+    box(px+pw/2-1.2,4.15,2.4,0.36,PUR,PUR,1,0.05)
+    ax.text(px+pw/2,4.33,"MPI_Allreduce (all processes)",ha="center",va="center",fontsize=8.6,fontweight="bold",color="white")
     ax.text(px+pw/2,4.78,note,ha="center",va="center",fontsize=7.8,color=INK,linespacing=1.25)
-ax.text(4,5.3,"Parallel assignment on every process; results combined by Allreduce (illustrative chunk sizes)",ha="center",va="center",fontsize=7.4,color="#5B6770",style="italic")
+ax.text(4,5.3,"Every process assigns its own vectors; the partial sums are combined by Allreduce (illustrative chunk sizes)",ha="center",va="center",fontsize=7.4,color="#5B6770",style="italic")
 fig.savefig("figs/Workload_distribution.png")

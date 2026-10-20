@@ -31,17 +31,17 @@ for yy in [36,29,22,15]:
 ax.text(17.7,25.6,"Scatterv",ha="center",fontsize=9,color=MAG,fontweight="bold")
 
 # 2 ranks
-cols=[PURPLE,PURPLE,TEAL,TEAL]
-labs=["Process 0\nP-core","Process 1\nP-core","Process 2\nE-core","Process P−1\nE-core"]
-shares=["larger share","larger share","smaller share","smaller share"]
+cols=[PURPLE,PURPLE,PURPLE,PURPLE]
+labs=["Process 0","Process 1","Process 2","Process P−1"]
+shares=["local vectors"]*4
 ys=[36,29,22,15]
 for y,c,l,s in zip(ys,cols,labs,shares):
     box(23,y-1.5,16,5.5,c,l+"\n"+s,fs=10)
-ax.text(31,44.5,"Each process gets a chunk (Adaptive shown)",ha="center",fontsize=12,fontweight="bold",color=INK)
-ax.text(31,9.6,"Adaptive: chunk size ∝ core speed",ha="center",fontsize=10,color=INK,style="italic")
+ax.text(31,44.5,"MPI-Based Parallel LBG Training",ha="center",fontsize=12,fontweight="bold",color=INK)
+ax.text(52,9.6,"How the vectors are divided (Equal or Adaptive): next slide",ha="center",fontsize=10,color=INK,style="italic")
 
 # 3 local assignment
-box(52,17,16,14,GOLD,"Local step:\nnearest codeword\nfor each block\n(main cost of LBG)",tc=INK,fs=10.5)
+box(52,17,16,14,GOLD,"Local assignment:\nnearest codeword\nfor each local vector\n(main cost of LBG)",tc=INK,fs=9.6)
 for y,ty in zip(ys,[29.0,25.7,22.3,19.0]): arrow(39.6,y+1.25,51.6,ty,c="#4A4A4A")
 ax.text(56,33.2,"in parallel",ha="center",fontsize=12,fontweight="bold",color=MAG)
 
@@ -50,12 +50,10 @@ ax.text(73,26.4,"Allreduce",ha="center",fontsize=11,color=MAG,fontweight="bold")
 ax.text(73,21.4,"sums from all\nprocesses",ha="center",va="top",fontsize=8.5,color=INK)
 
 # 4 codebook
-box(78,17,11,14,MAG,"New\ncodebook\nK = 64",fs=12)
-arrow(89.5,24,92.3,24)
-box(92.8,19.5,6.4,9,DEEP,"Repeat\nuntil\nconverged",fs=8.5)
-# loop arrow back
-ax.plot([96,96,64],[29.2,40.2,40.2],color=DEEP,lw=2.4,ls="--",solid_capstyle="round")
+box(78,17,17,14,MAG,"Codebook update\n(current size k)",fs=11.5)
+ax.text(86.5,13.2,"k grows by splitting:\n1 → 2 → 4 → … → 64",ha="center",va="center",fontsize=9.5,color=DEEP,style="italic")
+ax.plot([86.5,86.5,64],[31.6,40.2,40.2],color=DEEP,lw=2.4,ls="--",solid_capstyle="round")
 ax.add_patch(FancyArrowPatch((64,40.2),(64,31.6),arrowstyle="-|>",mutation_scale=22,lw=2.4,color=DEEP,linestyle="--"))
-ax.text(80,41.2,"next iteration (new codebook sent to all processes)",ha="center",fontsize=9.5,color=DEEP,style="italic")
+ax.text(75,41.4,"repeat until converged (new codebook sent to all processes)",ha="center",fontsize=9.5,color=DEEP,style="italic")
 
 plt.savefig("/home/user/mihk/results/seminar/figs/parallel_overview.png",bbox_inches="tight",facecolor="white")
