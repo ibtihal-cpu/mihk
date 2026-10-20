@@ -1042,7 +1042,7 @@ static int run_grayscale(const char *image_path)
     double tt_psnr   = t_psnr1  - t_psnr0;
     double tt_ssim   = t_s1     - t_s0;
     double tt_total  = t_total1 - t_total0;
-    double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_delta + tt_huff + tt_dd + tt_rec;   /* same stages as the parallel and colour paths */
+    double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_cvt + tt_delta + tt_huff + tt_dd + tt_rec;   /* same stages as the parallel and colour paths */
 
     double tt_sum = tt_read + tt_build + tt_lbg + tt_ent + tt_cvt +
                     tt_dec + tt_delta + tt_huff + tt_dd + tt_rec +

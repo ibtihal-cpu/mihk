@@ -171,6 +171,21 @@ def common(t, par):
 # ------------------------------------------------------------------ parallel
 t = open("code1.c").read()
 t = common(t, True)
+old = """        codebook_data = malloc(K * vlen);
+        for (int k = 0; k < K; k++)
+            for (int i = 0; i < vlen; i++)
+                codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
+        printf("Codebook converted to uint8_t (size = %d bytes)\\n", K * vlen);
+"""
+new = """        double tpc_c = MPI_Wtime();   /* 8-bit codebook = part of the container (timed here, as in the colour path) */
+        codebook_data = malloc(K * vlen);
+        for (int k = 0; k < K; k++)
+            for (int i = 0; i < vlen; i++)
+                codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
+        t_proc += MPI_Wtime() - tpc_c;
+        printf("Codebook converted to uint8_t (size = %d bytes)\\n", K * vlen);
+"""
+t = rep(t, old, new)
 t = rep(t, "    uint8_t *reconstructed = NULL;\n    int codebook_bytes = 0;\n", "    uint8_t *reconstructed = NULL;\n    int codebook_bytes = 0;\n    uint8_t *container = NULL; size_t container_bytes = 0;\n")
 old = """        int huff_data_bytes = 0;
         int header_bytes    = 0;
@@ -333,6 +348,7 @@ open("code3.c", "w").write(t)
 # ------------------------------------------------------------------ sequential
 t = open("code2.c").read()
 t = common(t, False)
+t = rep(t, "double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_delta + tt_huff + tt_dd + tt_rec;", "double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_cvt + tt_delta + tt_huff + tt_dd + tt_rec;")
 old = """    int huff_data_bytes = 0;
     int header_bytes    = 0;
     double t_huff0 = wtime();

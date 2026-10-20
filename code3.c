@@ -1112,10 +1112,12 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         double H = compute_entropy(labels, num_vectors, K);
         printf("Entropy before Huffman = %.3f bits/symbol\n", H);
 
+        double tpc_c = MPI_Wtime();   /* 8-bit codebook = part of the container (timed here, as in the colour path) */
         codebook_data = malloc(K * vlen);
         for (int k = 0; k < K; k++)
             for (int i = 0; i < vlen; i++)
                 codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
+        t_proc += MPI_Wtime() - tpc_c;
         printf("Codebook converted to uint8_t (size = %d bytes)\n", K * vlen);
 
         reconstructed_lbg = malloc(WIDTH * HEIGHT);
