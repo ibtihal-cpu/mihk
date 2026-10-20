@@ -16,28 +16,30 @@ panels=[(0.1,"Equal Vector Distribution","Same number of vectors per process (N/
          "Same chunk size on heterogeneous cores (P and E):\nload imbalance, the P-cores finish first and wait."),
         (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
          "Chunk size follows the core speed (heterogeneity-aware):\nbalanced load, all processes finish at about the same time.")]
-cores=[("P-core",BLUE),("P-core",BLUE),("E-core",TEAL),("E-core",TEAL)]
+cores=[("P-core",BLUE),("P-core",BLUE),None,("E-core",TEAL),("E-core",TEAL)]
 for px,title,sub,fc,ec,sizes,note in panels:
+    sizes=[sizes[0],sizes[1],None,sizes[2],sizes[3]]
     pw=3.8
     box(px,0.95,pw,4.1,fc,ec,2,0.1,"--")
     ax.text(px+pw/2,1.25,title,ha="center",va="center",fontsize=11.6,fontweight="bold",color=ec)
     ax.text(px+pw/2,1.58,sub,ha="center",va="center",fontsize=8.6,color=INK,style="italic")
-    top.__class__ if False else None
-    # arrow from top box
     arrow(4,0.6,px+pw/2,0.95,INK,1.6)
-    colw=pw/4
-    for i,(sz,(cn,cc)) in enumerate(zip(sizes,cores)):
+    colw=pw/5
+    for i,(sz,cc_) in enumerate(zip(sizes,cores)):
         cx=px+colw*(i+0.5)
-        # data chunk (square, size shows workload)
-        s=sz*0.8
+        if sz is None:
+            ax.text(cx,2.45,"· · ·",ha="center",va="center",fontsize=15,fontweight="bold",color=INK)
+            ax.text(cx,3.57,"· · ·",ha="center",va="center",fontsize=15,fontweight="bold",color=INK)
+            continue
+        cn,cc=cc_
+        s_=sz*0.66
         cy=2.45
-        box(cx-s/2,cy-s/2,s,s,"white",ec,1.8,0.04)
-        g=s/2
-        ax.plot([cx-s/2,cx+s/2],[cy,cy],color=ec,lw=0.8,alpha=.6); ax.plot([cx,cx],[cy-s/2,cy+s/2],color=ec,lw=0.8,alpha=.6)
-        ax.text(cx,2.95,"chunk",ha="center",va="center",fontsize=7,color=INK)
+        box(cx-s_/2,cy-s_/2,s_,s_,"white",ec,1.8,0.04)
+        ax.plot([cx-s_/2,cx+s_/2],[cy,cy],color=ec,lw=0.8,alpha=.6); ax.plot([cx,cx],[cy-s_/2,cy+s_/2],color=ec,lw=0.8,alpha=.6)
+        ax.text(cx,2.95,"chunk",ha="center",va="center",fontsize=6.6,color=INK)
         arrow(cx,3.07,cx,3.3)
-        box(cx-0.4,3.32,0.8,0.5,"white",cc,2,0.05)
-        ax.text(cx,3.57,cn,ha="center",va="center",fontsize=8.8,fontweight="bold",color=cc)
+        box(cx-0.31,3.32,0.62,0.5,"white",cc,2,0.05)
+        ax.text(cx,3.57,cn,ha="center",va="center",fontsize=7.6,fontweight="bold",color=cc)
         arrow(cx,3.82,px+pw/2+(cx-px-pw/2)*0.55,4.14,PUR,1.2)
     box(px+pw/2-1.2,4.15,2.4,0.36,PUR,PUR,1,0.05)
     ax.text(px+pw/2,4.33,"MPI_Allreduce (all processes)",ha="center",va="center",fontsize=8.6,fontweight="bold",color="white")
