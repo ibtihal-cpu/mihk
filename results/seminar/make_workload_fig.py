@@ -14,7 +14,7 @@ box(2.2,0.1,3.6,0.5,"#E4EEFA",BLUE,2)
 ax.text(4,0.35,"Training vectors (N = 16,384)",ha="center",va="center",fontsize=11.5,fontweight="bold",color=BLUE)
 panels=[(0.1,"Equal Vector Distribution","Same number of vectors per process (N/P)","#EAF3FB",BLUE,[0.78]*4,
          "Same chunk size on heterogeneous cores (P and E):\nload imbalance, the P-cores finish first and wait."),
-        (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.5,0.5],
+        (4.1,"Speed-Aware (Adaptive) Distribution","Vectors proportional to the measured process speed","#FDF0E3",ORG,[0.95,0.95,0.58,0.44],
          "Chunk size follows the core speed (heterogeneity-aware):\nbalanced load, all processes finish at about the same time.")]
 cores=[("P-core",BLUE),("P-core",BLUE),None,("E-core",TEAL),("E-core",TEAL)]
 for px,title,sub,fc,ec,sizes,note in panels:
@@ -28,12 +28,13 @@ for px,title,sub,fc,ec,sizes,note in panels:
     bc  = "#C0392B" if ec==BLUE else "#1E8449"
     box(px+pw/2-1.45,1.74,2.9,0.3,"white",bc,1.6,0.06)
     ax.text(px+pw/2,1.89,"Heterogeneous cores (P + E): "+bad,ha="center",va="center",fontsize=8.1,fontweight="bold",color=bc)
-    colw=pw/5
+    wts=[1,1,0.42,1,1]; unit=pw/sum(wts); edges=[0]
+    for w_ in wts: edges.append(edges[-1]+w_*unit)
     for i,(sz,cc_) in enumerate(zip(sizes,cores)):
-        cx=px+colw*(i+0.5)
+        cx=px+(edges[i]+edges[i+1])/2
         if sz is None:
-            ax.text(cx,2.52,"· · ·",ha="center",va="center",fontsize=15,fontweight="bold",color=INK)
-            ax.text(cx,3.57,"· · ·",ha="center",va="center",fontsize=15,fontweight="bold",color=INK)
+            ax.text(cx,2.52,"···",ha="center",va="center",fontsize=11,fontweight="bold",color=INK)
+            ax.text(cx,3.57,"···",ha="center",va="center",fontsize=11,fontweight="bold",color=INK)
             continue
         cn,cc=cc_
         s_=sz*0.66
