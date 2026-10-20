@@ -1,0 +1,1507 @@
+/*
+ * ============================================================
+ *  MPI-parallel LBG vector-quantization image compressor.
+ *
+ *  Same method, parameters and output format as the sequential program (4 x 4 blocks, K = 64 codewords,
+ *  delta = 0.01, epsilon = 0.0001, at most 100 iterations per stage; delta coding; canonical Huffman
+ *  container; MSE, PSNR and SSIM).  Grayscale and color images are supported; the mode is given by
+ *  --gray / --color or detected from the number of integers in the file (262144 or 786432).
+ *
+ *  Parallel design (every process runs the same program):
+ *    - Process 0 reads the image and builds the training vectors.
+ *    - The vectors are distributed among the processes.  Equal split: every process receives the same
+ *      number of vectors (used for up to 6 processes, which all run on the six performance cores).
+ *      Adaptive split: the number of vectors is proportional to the speed measured by a short benchmark
+ *      on each process (used for more than 6 processes, where the slower efficiency cores take part).
+ *      The environment variable VQ_STRATEGY=equal|adaptive forces one of the two.
+ *    - In every Lloyd iteration each process assigns its own vectors and accumulates partial sums; one
+ *      MPI_Allreduce gives all processes the global sums, so every process updates the same codebook.
+ *      Sums are accumulated in double precision, so they are exact and the result does not depend on
+ *      the number of processes.
+ *    - The labels are gathered on process 0, which performs delta coding, Huffman coding, the container
+ *      and the decoding.  SSIM is computed in parallel by all processes.
+ *    - Color images run the same pipeline for R, G and B in turn; the vector distribution is computed
+ *      once and reused for the three channels.
+ *
+ *  Compressed container (little-endian), written to compressed.bin (grayscale) or compressed_color.bin:
+ *      14 bytes  header   : number of used symbols (2), number of indices (4), width (2), height (2),
+ *                           size of the coded data in bytes (4)
+ *      2 bytes per used symbol : symbol and its Huffman code length
+ *      1024 bytes         : codebook, 64 codewords x 16 values, rounded to 8 bits
+ *      coded data         : Huffman bit stream of the delta-coded indices
+ *
+ *  Times that are printed (seconds, measured on process 0 with MPI_Wtime):
+ *      LBG time                : only the parallel LBG training (the initial global mean is computed
+ *                                just before the timer starts).
+ *      Total processing time   : training vectors, distribution of the work (including the speed
+ *                                benchmark for the adaptive split), scatter, initial mean, LBG, gather,
+ *                                8-bit codebook, delta coding, Huffman container, decoding.  It does NOT
+ *                                include reading the image, printing, writing files, entropy statistics, or
+ *                                MSE/PSNR/SSIM.  The sequential program counts the same stages.
+ *      Complete program time   : from the start of the program to its end.
+ *
+ *  Usage:
+ *      mpicc -O2 -Wall -o lbg_par <this file> -lm
+ *      mpirun -np <N> ./lbg_par <image.txt> [--gray|--color]
+ * ============================================================
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
+#include <mpi.h>
+
+#define WIDTH 512
+#define HEIGHT 512
+#define BLOCK_SIZE 4
+#define DELTA 0.01f
+#define EPSILON 0.0001f
+#define CODEBOOK_SIZE 64
+#define MAX_ITER 100
+#define K1 0.01
+#define K2 0.03
+#define VLEN (BLOCK_SIZE * BLOCK_SIZE)   /* = 16 */
+
+/* ============================================================
+   ---------------------- SHARED HELPERS -----------------------
+   (used by both the grayscale and the color path)
+   ============================================================ */
+
+void save_bmp_gray(const char *filename, uint8_t *data, int width, int height)
+{
+    int row_padded = (width + 3) & ~3;
+    int img_size   = row_padded * height;
+    int file_size  = 54 + 1024 + img_size;
+    int data_offset = 54 + 1024;
+
+    uint8_t header[54] = {0};
+    header[0] = 'B'; header[1] = 'M';
+    header[2] = file_size & 0xFF;
+    header[3] = (file_size >> 8)  & 0xFF;
+    header[4] = (file_size >> 16) & 0xFF;
+    header[5] = (file_size >> 24) & 0xFF;
+    header[10] = data_offset & 0xFF;
+    header[11] = (data_offset >> 8) & 0xFF;
+    header[14] = 40;
+    header[18] = width  & 0xFF; header[19] = (width  >> 8) & 0xFF;
+    header[20] = (width  >> 16) & 0xFF; header[21] = (width  >> 24) & 0xFF;
+    header[22] = height & 0xFF; header[23] = (height >> 8) & 0xFF;
+    header[24] = (height >> 16) & 0xFF; header[25] = (height >> 24) & 0xFF;
+    header[26] = 1;
+    header[28] = 8;
+    header[34] = img_size & 0xFF;
+    header[35] = (img_size >> 8) & 0xFF;
+
+    FILE *f = fopen(filename, "wb");
+    if (!f) { perror(filename); return; }
+    fwrite(header, 1, 54, f);
+    for (int i = 0; i < 256; i++) {
+        uint8_t e[4] = {(uint8_t)i, (uint8_t)i, (uint8_t)i, 0};
+        fwrite(e, 1, 4, f);
+    }
+    uint8_t pad[3] = {0};
+    for (int y = height - 1; y >= 0; y--) {
+        fwrite(&data[y * width], 1, width, f);
+        if (row_padded - width > 0)
+            fwrite(pad, 1, row_padded - width, f);
+    }
+    fclose(f);
+}
+
+void save_bmp_color(const char *filename, uint8_t *R, uint8_t *G, uint8_t *B,
+                     int width, int height)
+{
+    int row_bytes  = width * 3;
+    int row_padded = (row_bytes + 3) & ~3;
+    int img_size   = row_padded * height;
+    int file_size  = 54 + img_size;
+
+    uint8_t header[54] = {0};
+    header[0] = 'B'; header[1] = 'M';
+    header[2] = file_size & 0xFF;
+    header[3] = (file_size >> 8)  & 0xFF;
+    header[4] = (file_size >> 16) & 0xFF;
+    header[5] = (file_size >> 24) & 0xFF;
+    header[10] = 54;
+    header[14] = 40;
+    header[18] = width  & 0xFF; header[19] = (width  >> 8) & 0xFF;
+    header[20] = (width  >> 16) & 0xFF; header[21] = (width  >> 24) & 0xFF;
+    header[22] = height & 0xFF; header[23] = (height >> 8) & 0xFF;
+    header[24] = (height >> 16) & 0xFF; header[25] = (height >> 24) & 0xFF;
+    header[26] = 1;
+    header[28] = 24;
+    header[34] = img_size & 0xFF;
+    header[35] = (img_size >> 8) & 0xFF;
+
+    FILE *f = fopen(filename, "wb");
+    if (!f) { perror(filename); return; }
+    fwrite(header, 1, 54, f);
+
+    uint8_t pad[3] = {0, 0, 0};
+    for (int y = height - 1; y >= 0; y--) {
+        for (int x = 0; x < width; x++) {
+            int idx = y * width + x;
+            uint8_t pixel[3] = { B[idx], G[idx], R[idx] };
+            fwrite(pixel, 1, 3, f);
+        }
+        if (row_padded - row_bytes > 0)
+            fwrite(pad, 1, row_padded - row_bytes, f);
+    }
+    fclose(f);
+}
+
+int build_training_vectors(uint8_t *image, uint8_t **training_set)
+{
+    int num_blocks_x = WIDTH / BLOCK_SIZE;
+    int num_blocks_y = HEIGHT / BLOCK_SIZE;
+    int num_vectors = num_blocks_x * num_blocks_y;
+    int vector_length = BLOCK_SIZE * BLOCK_SIZE;
+
+    *training_set = (uint8_t *)malloc(num_vectors * vector_length);
+    if (!*training_set) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return -1;
+    }
+
+    int idx = 0;
+    for (int y = 0; y < HEIGHT; y += BLOCK_SIZE) {
+        for (int x = 0; x < WIDTH; x += BLOCK_SIZE) {
+            for (int r = 0; r < BLOCK_SIZE; r++) {
+                for (int c = 0; c < BLOCK_SIZE; c++) {
+                    int img_index = (y + r) * WIDTH + (x + c);
+                    int vec_index = r * BLOCK_SIZE + c;
+                    (*training_set)[idx * vector_length + vec_index] = image[img_index];
+                }
+            }
+            idx++;
+        }
+    }
+    return num_vectors;
+}
+
+int read_image_from_txt(const char *filename, uint8_t *image, int width, int height) {
+    FILE *f = fopen(filename, "r");
+    if (!f) { perror("Error opening image file"); return 0; }
+    int val, count = 0;
+    while (fscanf(f, "%d", &val) == 1 && count < width * height) {
+        if (val < 0) val = 0;
+        if (val > 255) val = 255;
+        image[count++] = (uint8_t)val;
+    }
+    fclose(f);
+    if (count != width * height) {
+        fprintf(stderr, "Warning: Expected %d pixels, got %d\n", width * height, count);
+    }
+    return count == width * height;
+}
+
+int read_color_image_from_txt(const char *filename,
+                               uint8_t *R, uint8_t *G, uint8_t *B,
+                               int width, int height)
+{
+    FILE *f = fopen(filename, "r");
+    if (!f) { perror("Error opening image file"); return 0; }
+
+    int r, g, b, count = 0;
+    while (fscanf(f, "%d %d %d", &r, &g, &b) == 3 && count < width * height) {
+        if (r < 0) r = 0;
+        if (r > 255) r = 255;
+        if (g < 0) g = 0;
+        if (g > 255) g = 255;
+        if (b < 0) b = 0;
+        if (b > 255) b = 255;
+        R[count] = (uint8_t)r; G[count] = (uint8_t)g; B[count] = (uint8_t)b;
+        count++;
+    }
+    fclose(f);
+    if (count != width * height) {
+        fprintf(stderr, "Warning: Expected %d pixels, got %d\n", width * height, count);
+    }
+    return count == width * height;
+}
+
+static inline float distance16f(const float * __restrict__ a,
+                                 const float * __restrict__ b)
+{
+    float d = 0.0f;
+    for (int i = 0; i < 16; i++) {
+        float diff = a[i] - b[i];
+        d += diff * diff;
+    }
+    return d;
+}
+
+/* micro-benchmark mirroring the LBG assignment kernel; returns this
+   rank's throughput in "distance comparisons per second" so vectors
+   can be handed out proportional to measured speed (np>4 path). */
+static double calibrate_speed(void)
+{
+    enum { NV = 512, NC = 64, REP = 2, CVLEN = 16 };
+    float *v  = (float *)malloc((size_t)NV * CVLEN * sizeof(float));
+    float *cb = (float *)malloc((size_t)NC * CVLEN * sizeof(float));
+    if (!v || !cb) { free(v); free(cb); return 1.0; }
+
+    for (int i = 0; i < NV * CVLEN; i++)
+        v[i]  = (float)(((unsigned)i * 1103515245u + 12345u) & 255u);
+    for (int i = 0; i < NC * CVLEN; i++)
+        cb[i] = (float)(((unsigned)i * 22695477u + 1u) & 255u);
+
+    /* The benchmark lasts well under 1 ms, so a single timed pass measures a transient state (clock
+       ramp-up of an idle core, especially an E-core) and gave unstable weights between runs/builds
+       (E-core speed measured anywhere between ~95 and ~172 Mcmp/s). Pass 0 is a discarded warm-up; of the
+       remaining passes the FASTEST is kept (robust against interference). Cost: ~1 ms, only when the adaptive split is used. */
+    enum { TRIALS = 3 };
+    volatile float sink = 0.0f;
+    double dt = 1e30;
+    for (int trial = 0; trial < TRIALS; trial++) {
+        double t0 = MPI_Wtime();
+        for (int r = 0; r < REP; r++) {
+            for (int i = 0; i < NV; i++) {
+                const float *x = v + i * CVLEN;
+                float best = 1e30f;
+                for (int c = 0; c < NC; c++) {
+                    float d = distance16f(cb + c * CVLEN, x);
+                    if (d < best) best = d;
+                }
+                sink += best;
+            }
+        }
+        double t = MPI_Wtime() - t0;
+        if (trial > 0 && t < dt) dt = t;
+    }
+    free(v); free(cb);
+    (void)sink;
+    if (dt <= 0.0 || dt > 1e29) dt = 1e-6;
+    return (double)REP * (double)NV * (double)NC / dt;
+}
+
+/* Returns the TOTAL number of Lloyd iterations summed over all split stages
+   (identical on every rank, since the stopping test uses the Allreduce'd
+   distortion). Same value as returned by the sequential lbg(). */
+int parallel_lbg(const float *local_vf, int local_n, int num_vectors,
+                   int vlen, int K, float *codebook, uint8_t *local_labels,
+                   int rank, int size, int verbose)
+{
+    /* The last parameter (verbose) controls the progress printing of rank 0. It is 0 at every call site,
+       so nothing is printed inside the timed LBG region; the sequential lbg() behaves in the same way. */
+    (void)size; (void)vlen;
+
+    /* Double accumulators and a double MPI_Allreduce: sums of integer-valued vectors are exact, so the codebook
+       and the iteration count do not depend on the number of processes or on the order of the additions
+       (the sequential program does the same). */
+    int buf_capacity = K * VLEN + K + 1;
+    double *buf = (double *)calloc(buf_capacity, sizeof(double));
+
+    int k = 1;
+    int total_iters = 0;
+    while (k < K) {
+        for (int i = k - 1; i >= 0; i--)
+            for (int j = 0; j < VLEN; j++) {
+                float v = codebook[i * VLEN + j];
+                codebook[(k + i) * VLEN + j] = v * (1.0f - DELTA);
+                codebook[i        * VLEN + j] = v * (1.0f + DELTA);
+            }
+        k = (k * 2 > K) ? K : k * 2;
+
+        const int sum_off  = 0;
+        const int cnt_off  = k * VLEN;
+        const int dist_off = cnt_off + k;
+        const int active   = dist_off + 1;
+
+        double prev_dist   = 1e30;
+        double improvement = 1.0;
+        int   iter        = 0;
+
+        do {
+            memset(buf, 0, active * sizeof(double));
+
+            for (int i = 0; i < local_n; i++) {
+                const float *v = local_vf + i * VLEN;
+                float best = 1e30f;
+                int   bi   = 0;
+                for (int c = 0; c < k; c++) {
+                    float d = distance16f(codebook + c * VLEN, v);
+                    if (d < best) { best = d; bi = c; }
+                }
+                local_labels[i]    = (uint8_t)bi;
+                buf[dist_off]     += best;
+                buf[cnt_off + bi] += 1.0;
+                double *s = buf + sum_off + bi * VLEN;
+                for (int j = 0; j < VLEN; j++)
+                    s[j] += v[j];
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, buf, active,
+                          MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+            double global_dist = buf[dist_off] / (double)num_vectors;
+
+            for (int c = 0; c < k; c++) {
+                double cnt = buf[cnt_off + c];
+                if (cnt > 0.0) {
+                    double *s  = buf + sum_off + c * VLEN;
+                    for (int j = 0; j < VLEN; j++)
+                        codebook[c * VLEN + j] = (float)(s[j] / cnt);
+                }
+            }
+
+            improvement = fabs(prev_dist - global_dist) / (global_dist + 1e-9);
+            prev_dist   = global_dist;
+            iter++;
+
+            if (rank == 0 && verbose && iter == 1)
+                printf("k=%3d iter=%3d distortion=%.4f  (first)\n", k, iter, prev_dist);
+
+        } while (iter < MAX_ITER && improvement > (double)EPSILON);
+        total_iters += iter;
+
+        if (rank == 0 && verbose)
+            printf("k=%3d iter=%3d distortion=%.4f  (converged)\n", k, iter, prev_dist);
+    }
+    free(buf);
+    return total_iters;
+}
+
+/* The codebook is one flat float array: codeword c occupies codebook[c*VLEN .. c*VLEN+VLEN-1]. */
+void decompress_image(uint8_t *reconstructed, int width, int height,
+                       int block_size, const float *codebook, uint8_t *labels)
+{
+    int blocks_per_row = width / block_size;
+    int blocks_per_col = height / block_size;
+    int vec_idx = 0;
+    for (int by = 0; by < blocks_per_col; by++) {
+        for (int bx = 0; bx < blocks_per_row; bx++) {
+            int code_idx = labels[vec_idx];
+            for (int r = 0; r < block_size; r++) {
+                for (int c = 0; c < block_size; c++) {
+                    int img_idx = (by*block_size+r)*width + (bx*block_size+c);
+                    int pos = r*block_size + c;
+                    reconstructed[img_idx] =
+                        (uint8_t)roundf(codebook[code_idx * VLEN + pos]);
+                }
+            }
+            vec_idx++;
+        }
+    }
+}
+
+double compute_mse(uint8_t *original, uint8_t *reconstructed, int size) {
+    double mse = 0.0;
+    for (int i = 0; i < size; i++) {
+        double diff = (double)original[i] - (double)reconstructed[i];
+        mse += diff*diff;
+    }
+    return mse/size;
+}
+
+double compute_psnr(uint8_t *original, uint8_t *reconstructed, int size) {
+    double mse = compute_mse(original, reconstructed, size);
+    if (mse == 0) return 100.0;
+    return 10.0 * log10((255.0*255.0)/mse);
+}
+
+double compute_entropy(uint8_t *labels, int num_labels, int codebook_size)
+{
+    int hist[256] = {0};
+    for (int i = 0; i < num_labels; i++) hist[labels[i]]++;
+    double H = 0.0;
+    for (int i = 0; i < codebook_size; i++) {
+        if (hist[i] > 0) {
+            double p = (double)hist[i] / num_labels;
+            H -= p * log2(p);
+        }
+    }
+    return H;
+}
+
+/* ========================  HUFFMAN CODING  ======================== */
+typedef struct HuffNode {
+    int value;
+    uint32_t freq;
+    struct HuffNode *left;
+    struct HuffNode *right;
+} HuffNode;
+
+typedef struct { HuffNode **data; int size; int capacity; } MinHeap;
+typedef struct { uint64_t bits; int length; } HuffCode;
+
+static MinHeap *heap_create(int cap) {
+    MinHeap *h = (MinHeap*)malloc(sizeof(MinHeap));
+    h->data = (HuffNode**)malloc(sizeof(HuffNode*) * cap);
+    h->size = 0; h->capacity = cap;
+    return h;
+}
+static HuffNode *huff_new_node(int value, uint32_t freq) {
+    HuffNode *n = (HuffNode*)malloc(sizeof(HuffNode));
+    n->value = value; n->freq = freq; n->left = n->right = NULL;
+    return n;
+}
+static void heap_swap(HuffNode **a, HuffNode **b) { HuffNode *t = *a; *a = *b; *b = t; }
+static void heap_push(MinHeap *h, HuffNode *node) {
+    int i = h->size++;
+    h->data[i] = node;
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (h->data[p]->freq <= h->data[i]->freq) break;
+        heap_swap(&h->data[p], &h->data[i]);
+        i = p;
+    }
+}
+static HuffNode *heap_pop(MinHeap *h) {
+    if (h->size == 0) return NULL;
+    HuffNode *root = h->data[0];
+    h->data[0] = h->data[--h->size];
+    int i = 0;
+    while (1) {
+        int l = 2*i+1, r = 2*i+2, smallest = i;
+        if (l < h->size && h->data[l]->freq < h->data[smallest]->freq) smallest = l;
+        if (r < h->size && h->data[r]->freq < h->data[smallest]->freq) smallest = r;
+        if (smallest == i) break;
+        heap_swap(&h->data[i], &h->data[smallest]);
+        i = smallest;
+    }
+    return root;
+}
+static void huff_free_tree(HuffNode *node) {
+    if (!node) return;
+    huff_free_tree(node->left);
+    huff_free_tree(node->right);
+    free(node);
+}
+static int g_huff_decode_ok = 1;   /* result of the Huffman decode check */
+__attribute__((unused)) static void report_huffman_decode_check(void) {
+    printf("Decode check: %s\n", g_huff_decode_ok ? "OK (labels identical, no distortion)" : "ERROR (mismatch!)");
+}
+static HuffNode *huff_build_tree(uint32_t *freq, int max_symbol) {
+    MinHeap *h = heap_create(max_symbol + 1);
+    for (int i = 0; i <= max_symbol; i++)
+        if (freq[i] > 0) heap_push(h, huff_new_node(i, freq[i]));
+    if (h->size == 0) { free(h->data); free(h); return NULL; }
+    if (h->size == 1) {
+        HuffNode *only = heap_pop(h);
+        HuffNode *root = huff_new_node(-1, only->freq);
+        root->left = only;
+        free(h->data); free(h);
+        return root;
+    }
+    while (h->size > 1) {
+        HuffNode *a = heap_pop(h);
+        HuffNode *b = heap_pop(h);
+        HuffNode *p = huff_new_node(-1, a->freq + b->freq);
+        p->left = a; p->right = b;
+        heap_push(h, p);
+    }
+    HuffNode *root = heap_pop(h);
+    free(h->data); free(h);
+    return root;
+}
+static void huff_build_codes_rec(HuffNode *node, HuffCode *table, uint64_t code, int length) {
+    if (!node) return;
+    if (node->value >= 0) { table[node->value].bits = code; table[node->value].length = length; return; }
+    huff_build_codes_rec(node->left,  table, (code << 1),      length + 1);
+    huff_build_codes_rec(node->right, table, (code << 1) | 1u, length + 1);
+}
+static void huff_build_codes(HuffNode *root, HuffCode *table, int max_symbol) {
+    for (int i = 0; i <= max_symbol; ++i) { table[i].bits = 0; table[i].length = 0; }
+    huff_build_codes_rec(root, table, 0, 0);
+}
+static uint8_t *huff_encode(uint8_t *data, int n, HuffCode *table, int *out_bytes) {
+    int cap = n * 4;
+    uint8_t *out = (uint8_t*)malloc(cap);
+    int byte_pos = 0, bit_pos = 0;
+    uint8_t current = 0;
+    for (int i = 0; i < n; ++i) {
+        HuffCode hc = table[data[i]];
+        uint64_t bits = hc.bits;
+        int len = hc.length;
+        if (len == 0) continue;
+        for (int b = len - 1; b >= 0; --b) {
+            int bit = (int)((bits >> b) & 1u);
+            current |= (uint8_t)(bit << (7 - bit_pos));
+            bit_pos++;
+            if (bit_pos == 8) {
+                out[byte_pos++] = current;
+                current = 0; bit_pos = 0;
+                if (byte_pos >= cap) { cap *= 2; out = (uint8_t*)realloc(out, cap); }
+            }
+        }
+    }
+    if (bit_pos > 0) out[byte_pos++] = current;
+    *out_bytes = byte_pos;
+    return out;
+}
+static void huff_decode(uint8_t *encoded, int enc_bytes, HuffNode *root, int original_n, uint8_t *out) {
+    HuffNode *node = root;
+    int out_pos = 0;
+    for (int i = 0; i < enc_bytes; ++i) {
+        uint8_t byte = encoded[i];
+        for (int b = 7; b >= 0; --b) {
+            if (out_pos >= original_n) return;
+            int bit = (byte >> b) & 1;
+            node = bit ? node->right : node->left;
+            if (!node) { node = root; continue; }   /* single-symbol tree: no right child, resync safely */
+            if (node->value >= 0) { out[out_pos++] = (uint8_t)node->value; node = root; }
+        }
+    }
+}
+
+/* ============================================================
+   REAL COMPRESSED CONTAINER  (canonical Huffman; replaces the size model)
+   Layout (all multi-byte fields little-endian):
+     [ 2 B used_symbols ][ 4 B num_labels ][ 2 B width ][ 2 B height ][ 4 B coded_bytes ]      14 B header
+     [ used_symbols x ( 1 B symbol , 1 B code_length ) ]                                       table (2 B/symbol)
+     [ K x 16 B codebook, 8-bit rounded elements ]
+     [ coded_bytes B canonical-Huffman bitstream of the delta-coded indices ]
+   The decoder rebuilds the canonical codes from (symbol, length) pairs, so no frequencies are stored
+   (canonical prefix codes: Schwartz and Kallick, CACM 1964).
+   ============================================================ */
+typedef struct { int sym; int len; } CanSym;
+static int can_cmp(const void *a, const void *b)
+{
+    const CanSym *x = (const CanSym *)a, *y = (const CanSym *)b;
+    if (x->len != y->len) return x->len - y->len;
+    return x->sym - y->sym;
+}
+static void canonical_codes(const int *len, uint64_t *code)
+{
+    CanSym s[256]; int n = 0;
+    for (int i = 0; i < 256; i++) { code[i] = 0; if (len[i] > 0) { s[n].sym = i; s[n].len = len[i]; n++; } }
+    if (n == 0) return;
+    qsort(s, n, sizeof(CanSym), can_cmp);
+    uint64_t c = 0;
+    code[s[0].sym] = 0;
+    for (int i = 1; i < n; i++) {
+        c = (c + 1) << (s[i].len - s[i-1].len);
+        code[s[i].sym] = c;
+    }
+}
+static void put16(uint8_t *p, unsigned v) { p[0] = (uint8_t)(v & 255u); p[1] = (uint8_t)((v >> 8) & 255u); }
+static void put32(uint8_t *p, uint32_t v) { for (int i = 0; i < 4; i++) p[i] = (uint8_t)((v >> (8*i)) & 255u); }
+static unsigned get16(const uint8_t *p) { return (unsigned)p[0] | ((unsigned)p[1] << 8); }
+static uint32_t get32(const uint8_t *p) { uint32_t v = 0; for (int i = 0; i < 4; i++) v |= ((uint32_t)p[i]) << (8*i); return v; }
+
+static size_t container_capacity(int n, int K, int vlen)
+{
+    return 14 + 512 + (size_t)K * vlen + (size_t)n * 9 + 16;
+}
+
+/* returns the number of bytes written (0 on failure); *out_data_bytes = coded bitstream bytes,
+   *out_header_bytes = header + table bytes (everything except codebook and bitstream) */
+static size_t container_encode(uint8_t *out, const uint8_t *delta, int n, const uint8_t *cb_u8,
+                               int K, int vlen, int w, int h, int *out_data_bytes, int *out_header_bytes)
+{
+    uint32_t freq[256] = {0};
+    for (int i = 0; i < n; i++) freq[delta[i]]++;
+    HuffNode *root = huff_build_tree(freq, 255);
+    if (!root) return 0;
+    HuffCode tbl[256];
+    huff_build_codes(root, tbl, 255);
+    huff_free_tree(root);
+    int len[256]; int used = 0;
+    for (int i = 0; i < 256; i++) { len[i] = tbl[i].length; if (freq[i] > 0) used++; }
+    uint64_t code[256];
+    canonical_codes(len, code);
+
+    size_t p = 0;
+    put16(out + p, (unsigned)used); p += 2;
+    put32(out + p, (uint32_t)n);    p += 4;
+    put16(out + p, (unsigned)w);    p += 2;
+    put16(out + p, (unsigned)h);    p += 2;
+    size_t coded_field = p;         p += 4;
+    for (int i = 0; i < 256; i++) if (len[i] > 0) { out[p++] = (uint8_t)i; out[p++] = (uint8_t)len[i]; }
+    int header_bytes = (int)p;
+    memcpy(out + p, cb_u8, (size_t)K * vlen); p += (size_t)K * vlen;
+
+    size_t data_start = p;
+    uint8_t cur = 0; int bit_pos = 0;
+    for (int i = 0; i < n; i++) {
+        int s = delta[i], L = len[s];
+        uint64_t c = code[s];
+        for (int b = L - 1; b >= 0; b--) {
+            cur |= (uint8_t)(((c >> b) & 1u) << (7 - bit_pos));
+            if (++bit_pos == 8) { out[p++] = cur; cur = 0; bit_pos = 0; }
+        }
+    }
+    if (bit_pos > 0) out[p++] = cur;
+    uint32_t coded = (uint32_t)(p - data_start);
+    put32(out + coded_field, coded);
+    if (out_data_bytes)   *out_data_bytes = (int)coded;
+    if (out_header_bytes) *out_header_bytes = header_bytes;
+    return p;
+}
+
+/* decodes one container: indices -> inverse delta -> codebook lookup -> image.  returns 0 on success */
+static int container_decode(const uint8_t *buf, size_t buf_len, uint8_t *recon,
+                            int K, int vlen, int block, int w, int h, size_t *consumed)
+{
+    if (buf_len < 14) return -1;
+    unsigned used = get16(buf); uint32_t n = get32(buf + 2);
+    unsigned w_ = get16(buf + 6), h_ = get16(buf + 8); uint32_t coded = get32(buf + 10);
+    if ((int)w_ != w || (int)h_ != h || used == 0 || used > 256) return -2;
+    size_t p = 14;
+    if (p + 2 * (size_t)used + (size_t)K * vlen + coded > buf_len) return -3;
+    int len[256] = {0};
+    for (unsigned u = 0; u < used; u++) { int s = buf[p++]; len[s] = buf[p++]; }
+    const uint8_t *cb = buf + p; p += (size_t)K * vlen;
+    const uint8_t *data = buf + p;
+    uint64_t code[256];
+    canonical_codes(len, code);
+
+    size_t maxnodes = 2; for (int i = 0; i < 256; i++) maxnodes += (size_t)len[i];
+    int *child = (int *)malloc(maxnodes * 2 * sizeof(int));
+    int *symof = (int *)malloc(maxnodes * sizeof(int));
+    if (!child || !symof) { free(child); free(symof); return -4; }
+    int nn = 1; child[0] = child[1] = -1; symof[0] = -1;
+    for (int s = 0; s < 256; s++) if (len[s] > 0) {
+        int node = 0;
+        for (int b = len[s] - 1; b >= 0; b--) {
+            int bit = (int)((code[s] >> b) & 1u);
+            if (child[node * 2 + bit] < 0) { child[nn * 2] = child[nn * 2 + 1] = -1; symof[nn] = -1; child[node * 2 + bit] = nn++; }
+            node = child[node * 2 + bit];
+        }
+        symof[node] = s;
+    }
+    uint8_t *lab = (uint8_t *)malloc(n);
+    int rc = 0; uint32_t pos = 0; int node = 0;
+    for (uint32_t i = 0; i < coded && pos < n && rc == 0; i++) {
+        for (int b = 7; b >= 0 && pos < n; b--) {
+            node = child[node * 2 + ((data[i] >> b) & 1)];
+            if (node < 0) { rc = -5; break; }
+            if (symof[node] >= 0) { lab[pos++] = (uint8_t)symof[node]; node = 0; }
+        }
+    }
+    if (rc == 0 && pos != n) rc = -6;
+    if (rc == 0) {
+        for (uint32_t i = 1; i < n; i++) lab[i] = (uint8_t)(lab[i-1] + ((int)lab[i] - 128));   /* inverse delta (label 0 is stored as is) */
+        int bpr = w / block, bpc = h / block; uint32_t v = 0;
+        for (int by = 0; by < bpc; by++)
+            for (int bx = 0; bx < bpr; bx++, v++)
+                for (int r = 0; r < block; r++)
+                    for (int c = 0; c < block; c++)
+                        recon[(by * block + r) * w + (bx * block + c)] = cb[(size_t)lab[v] * vlen + r * block + c];
+    }
+    free(child); free(symof); free(lab);
+    if (rc == 0 && consumed) *consumed = p + coded;
+    return rc;
+}
+
+int huffman_on_labels(uint8_t *labels, int num_labels, int max_symbol,
+                       int *out_huff_data, int *out_header)
+{
+    uint32_t *freq = (uint32_t*)calloc(max_symbol + 1, sizeof(uint32_t));
+    for (int i = 0; i < num_labels; ++i) {
+        int v = labels[i];
+        if (v >= 0 && v <= max_symbol) freq[v]++;
+    }
+    int used_symbols = 0;
+    for (int i = 0; i <= max_symbol; i++) if (freq[i] > 0) used_symbols++;
+
+    HuffNode *root = huff_build_tree(freq, max_symbol);
+    if (!root) { printf("Huffman: no symbols found!\n"); free(freq); return 0; }
+
+    HuffCode *table = (HuffCode*)malloc((max_symbol + 1) * sizeof(HuffCode));
+    huff_build_codes(root, table, max_symbol);
+
+    int enc_bytes = 0;
+    uint8_t *enc = huff_encode(labels, num_labels, table, &enc_bytes);
+
+    /* Accounting convention: this program does not write a self-contained compressed file. The compressed size is
+       codebook (K*16 bytes) + Huffman-coded data + Huffman table. The table is accounted as 5 bytes per used symbol
+       (1 byte symbol identity + 4 bytes frequency) plus 10 bytes of fixed metadata. The Huffman decode check below
+       uses the in-memory tree; it verifies that the coded data decodes losslessly, not a stored header. */
+    int header_bytes = used_symbols * (1 + sizeof(uint32_t));   /* symbol (1 B) + frequency (4 B) */
+    header_bytes += 10;                                         /* fixed metadata */
+    int total_compressed = header_bytes + enc_bytes;
+
+    uint8_t *decoded = (uint8_t*)malloc(num_labels);
+    huff_decode(enc, enc_bytes, root, num_labels, decoded);
+
+    int ok = 1;
+    for (int i = 0; i < num_labels; ++i)
+        if (labels[i] != decoded[i]) { ok = 0; break; }
+    g_huff_decode_ok = ok;
+
+    if (out_huff_data) *out_huff_data = enc_bytes;
+    if (out_header)    *out_header    = header_bytes;
+
+    free(freq); free(table); free(enc); free(decoded);
+    huff_free_tree(root);
+    return total_compressed;
+}
+
+/* ============================================================
+   SSIM - parallel version (used by both the grayscale and the color path)
+   ============================================================ */
+static const double (*ssim_gaussian_window(void))[11]
+{
+    static double gw[11][11];
+    static int initialized = 0;
+    if (!initialized) {
+        const double sigma = 1.5;
+        const double two_s2 = 2.0 * sigma * sigma;
+        double sum = 0.0;
+        for (int u = -5; u <= 5; u++)
+            for (int v = -5; v <= 5; v++) {
+                double g = exp(-((double)(u*u + v*v)) / two_s2);
+                gw[u+5][v+5] = g;
+                sum += g;
+            }
+        for (int a = 0; a < 11; a++)
+            for (int b = 0; b < 11; b++)
+                gw[a][b] /= sum;
+        initialized = 1;
+    }
+    return gw;
+}
+
+double SSIM_window_based_parallel(unsigned char *img1, unsigned char *img2,
+                                   int W, int H, int rank, int size)
+{
+    const double (*gaussian11x11)[11] = ssim_gaussian_window();
+
+    double local_total = 0.0;
+    long   local_count = 0;
+
+    const int i_start = 5;
+    const int i_end   = H - 5;
+    const int rows    = (i_end > i_start) ? (i_end - i_start) : 0;
+    const int base    = (size > 0) ? rows / size : 0;
+    const int rem     = (size > 0) ? rows % size : 0;
+    const int my_first = i_start + rank * base + (rank < rem ? rank : rem);
+    const int my_rows  = base + (rank < rem ? 1 : 0);
+    const int my_last  = my_first + my_rows;
+
+    for (int i = my_first; i < my_last; i++) {
+        for (int j = 5; j < W - 5; j++) {
+            double mu_x = 0, mu_y = 0;
+            for (int u = -5; u <= 5; u++)
+                for (int v = -5; v <= 5; v++) {
+                    double w = gaussian11x11[u+5][v+5];
+                    mu_x += w * img1[(i+u)*W + (j+v)];
+                    mu_y += w * img2[(i+u)*W + (j+v)];
+                }
+            double sigma_x = 0, sigma_y = 0, sigma_xy = 0;
+            for (int u = -5; u <= 5; u++)
+                for (int v = -5; v <= 5; v++) {
+                    double w = gaussian11x11[u+5][v+5];
+                    double x = img1[(i+u)*W + (j+v)];
+                    double y = img2[(i+u)*W + (j+v)];
+                    sigma_x  += w * (x - mu_x) * (x - mu_x);
+                    sigma_y  += w * (y - mu_y) * (y - mu_y);
+                    sigma_xy += w * (x - mu_x) * (y - mu_y);
+                }
+            double C1 = (K1 * 255) * (K1 * 255);
+            double C2 = (K2 * 255) * (K2 * 255);
+            double num = (2 * mu_x * mu_y + C1) * (2 * sigma_xy + C2);
+            double den = (mu_x * mu_x + mu_y * mu_y + C1) * (sigma_x + sigma_y + C2);
+            local_total += num / den;
+            local_count++;
+        }
+    }
+
+    double global_total = 0.0;
+    long   global_count = 0;
+    MPI_Allreduce(&local_total, &global_total, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&local_count, &global_count, 1, MPI_LONG,   MPI_SUM, MPI_COMM_WORLD);
+
+    return (global_count > 0) ? global_total / (double)global_count : 0.0;
+}
+
+/* ============================================================
+   -------------- shared vector-distribution helper ---------------
+   Computes vec_counts/vec_displs/byte_counts/byte_displs exactly
+   (computed once for the grayscale path, and once for all three channels in the color path).
+   ============================================================ */
+static void compute_vector_distribution(int num_vectors, int vlen, int rank, int size,
+                                         int *vec_counts, int *vec_displs,
+                                         int *byte_counts, int *byte_displs)
+{
+    const char *strategy_env = getenv("VQ_STRATEGY");
+    int use_equal_split;
+    if (strategy_env && strcmp(strategy_env, "equal") == 0)
+        use_equal_split = 1;
+    else if (strategy_env && strcmp(strategy_env, "adaptive") == 0)
+        use_equal_split = 0;
+    else
+        use_equal_split = (size <= 6);   /* code3b: threshold = number of P-cores (6); P-only runs gain nothing from calibration */
+
+    if (use_equal_split) {
+        int acc = 0;
+        int vec_base = num_vectors / size;
+        int vec_rem  = num_vectors % size;
+        for (int r = 0; r < size; r++) {
+            vec_counts[r]  = vec_base + (r < vec_rem ? 1 : 0);
+            vec_displs[r]  = acc;
+            byte_counts[r] = vec_counts[r] * vlen;
+            byte_displs[r] = acc * vlen;
+            acc += vec_counts[r];
+        }
+        if (rank == 0)
+            printf("[Equal split] np=%d strategy=%s: calibration skipped, equal decomposition.\n",
+                   size, strategy_env ? strategy_env : "auto");
+    } else {
+        MPI_Barrier(MPI_COMM_WORLD);
+        double my_speed = calibrate_speed();
+
+        double *speeds = (double *)malloc(size * sizeof(double));
+        MPI_Allgather(&my_speed, 1, MPI_DOUBLE, speeds, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+
+        double sum_speed = 0.0;
+        for (int r = 0; r < size; r++) sum_speed += speeds[r];
+        if (sum_speed <= 0.0) { for (int r = 0; r < size; r++) speeds[r] = 1.0; sum_speed = size; }
+
+        double *frac = (double *)malloc(size * sizeof(double));
+        int assigned = 0;
+        for (int r = 0; r < size; r++) {
+            double ideal = (double)num_vectors * speeds[r] / sum_speed;
+            vec_counts[r] = (int)ideal;
+            frac[r]       = ideal - (double)vec_counts[r];
+            assigned     += vec_counts[r];
+        }
+        int rem = num_vectors - assigned;
+        for (int kk = 0; kk < rem; kk++) {
+            int best = -1; double bestf = -1.0;
+            for (int r = 0; r < size; r++)
+                if (frac[r] > bestf) { bestf = frac[r]; best = r; }
+            vec_counts[best] += 1;
+            frac[best] = -1.0;
+        }
+
+        int acc = 0;
+        for (int r = 0; r < size; r++) {
+            vec_displs[r]  = acc;
+            byte_counts[r] = vec_counts[r] * vlen;
+            byte_displs[r] = acc * vlen;
+            acc += vec_counts[r];
+        }
+
+        if (rank == 0) {
+            printf("[Weighted split] speed-based vector distribution:\n");
+            for (int r = 0; r < size; r++)
+                printf("  rank %2d : speed=%.2f Mcmp/s  ->  %d vectors (%.1f%%)\n",
+                       r, speeds[r] / 1e6, vec_counts[r],
+                       100.0 * vec_counts[r] / num_vectors);
+        }
+        free(speeds); free(frac);
+    }
+}
+
+/* ============================================================
+   ------------------- MODE AUTO-DETECTION -----------------------
+   (rank 0 only; the result is broadcast to all other processes)
+   ============================================================ */
+typedef enum { MODE_UNKNOWN = 0, MODE_GRAY, MODE_COLOR } ImgMode;
+
+static ImgMode detect_mode_from_file(const char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) { perror(path); return MODE_UNKNOWN; }
+    long count = 0;
+    int val;
+    while (fscanf(f, "%d", &val) == 1) count++;
+    fclose(f);
+
+    long gray_expect  = (long)WIDTH * HEIGHT;
+    long color_expect = (long)WIDTH * HEIGHT * 3;
+    if (count == gray_expect)  return MODE_GRAY;
+    if (count == color_expect) return MODE_COLOR;
+    return MODE_UNKNOWN;
+}
+
+/* ============================================================
+   ---------------------- GRAYSCALE PATH -------------------------
+   Complete pipeline for one grayscale image.
+   ============================================================ */
+static int run_gray_parallel(int argc, char *argv[], int rank, int size, const char *image_path)
+{
+    (void)argc; (void)argv;
+
+    const int K    = CODEBOOK_SIZE;
+    const int vlen = BLOCK_SIZE * BLOCK_SIZE;
+
+    int original_image_bytes = WIDTH * HEIGHT;
+
+    uint8_t *image       = NULL;
+    uint8_t *training_set = NULL;
+    int      num_vectors  = 0;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double t_total0 = MPI_Wtime();
+    double t_proc = 0.0;   /* total processing time accumulator */
+
+    if (rank == 0) {
+        image = (uint8_t *)malloc(WIDTH * HEIGHT);
+        if (!image) { fprintf(stderr, "malloc image failed\n"); MPI_Abort(MPI_COMM_WORLD,1); }
+
+        if (!read_image_from_txt(image_path, image, WIDTH, HEIGHT)) {
+            fprintf(stderr, "Failed to read image from text file.\n");
+            free(image);
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+
+        double tpa = MPI_Wtime();
+        num_vectors = build_training_vectors(image, &training_set);
+        t_proc += MPI_Wtime() - tpa;
+        printf("Built %d training vectors (each %d elements)\n", num_vectors, vlen);
+    }
+
+    double tpb0 = MPI_Wtime();
+    MPI_Bcast(&num_vectors, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    int *vec_counts  = (int *)calloc(size, sizeof(int));
+    int *vec_displs  = (int *)malloc(size * sizeof(int));
+    int *byte_counts = (int *)malloc(size * sizeof(int));
+    int *byte_displs = (int *)malloc(size * sizeof(int));
+
+    compute_vector_distribution(num_vectors, vlen, rank, size,
+                                 vec_counts, vec_displs, byte_counts, byte_displs);
+
+    int local_n = vec_counts[rank];
+
+    uint8_t *local_v = (uint8_t *)malloc((size_t)local_n * vlen);
+    MPI_Scatterv(training_set, byte_counts, byte_displs, MPI_UINT8_T,
+                 local_v,      local_n * vlen,           MPI_UINT8_T,
+                 0, MPI_COMM_WORLD);
+
+    float *codebook_flat = (float *)calloc(K * vlen, sizeof(float));
+    {
+        double *local_mean = (double *)calloc(vlen, sizeof(double));
+        for (int i = 0; i < local_n; i++)
+            for (int j = 0; j < vlen; j++)
+                local_mean[j] += (double)local_v[i * vlen + j];
+        MPI_Allreduce(MPI_IN_PLACE, local_mean, vlen,
+                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        for (int j = 0; j < vlen; j++)
+            codebook_flat[j] = (float)(local_mean[j] / (double)num_vectors);
+        free(local_mean);
+    }
+
+    float *local_vf = (float *)malloc((size_t)local_n * vlen * sizeof(float));
+    for (int i = 0; i < local_n * vlen; i++)
+        local_vf[i] = (float)local_v[i];
+
+    uint8_t *labels       = NULL;
+    if (rank == 0) labels = (uint8_t *)calloc(num_vectors, sizeof(uint8_t));
+    uint8_t *local_labels = (uint8_t *)calloc(local_n, sizeof(uint8_t));
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double t0 = MPI_Wtime();
+    int lbg_iters = parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
+                 codebook_flat, local_labels, rank, size, 0);
+    MPI_Barrier(MPI_COMM_WORLD);
+    double t1 = MPI_Wtime();
+    double time_lbg = t1 - t0;
+
+    MPI_Gatherv(local_labels, local_n,                MPI_UINT8_T,
+                labels,       vec_counts, vec_displs, MPI_UINT8_T,
+                0, MPI_COMM_WORLD);
+    t_proc += MPI_Wtime() - tpb0;
+
+    uint8_t *ssim_a = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
+    uint8_t *ssim_b = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
+
+    uint8_t *codebook_data = NULL, *reconstructed_lbg = NULL, *labels_delta_u = NULL;
+    uint8_t *reconstructed = NULL;
+    int codebook_bytes = 0;
+    uint8_t *container = NULL; size_t container_bytes = 0;
+
+    if (rank == 0) {
+        printf("\nFinal codebook (%d codewords):\n", K);
+        for (int c = 0; c < 10; c++) {
+            printf("Codeword %d: ", c);
+            for (int j = 0; j < vlen; j++)
+                printf("%.1f ", codebook_flat[c * vlen + j]);
+            printf("\n");
+        }
+
+        printf("==================================\n");
+        printf("Time (LBG only): %.4f seconds\n", time_lbg);
+        printf("LBG total iterations: %d\n", lbg_iters);
+
+        double H = compute_entropy(labels, num_vectors, K);
+        printf("Entropy before Huffman = %.3f bits/symbol\n", H);
+
+        double tpc_c = MPI_Wtime();   /* 8-bit codebook = part of the container (timed here, as in the colour path) */
+        codebook_data = malloc(K * vlen);
+        for (int k = 0; k < K; k++)
+            for (int i = 0; i < vlen; i++)
+                codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
+        t_proc += MPI_Wtime() - tpc_c;
+        printf("Codebook converted to uint8_t (size = %d bytes)\n", K * vlen);
+
+        reconstructed_lbg = malloc(WIDTH * HEIGHT);
+        decompress_image(reconstructed_lbg, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, labels);
+
+        FILE *flbg = fopen("lbg_decompress.txt", "w");
+        for (size_t i = 0; i < (size_t)(WIDTH*HEIGHT); i++)
+            fprintf(flbg, "%u\n", reconstructed_lbg[i]);
+        fclose(flbg);
+
+        double td0 = MPI_Wtime();
+        double tpd0 = td0;
+        labels_delta_u = malloc(num_vectors);
+        labels_delta_u[0] = labels[0];
+        for (int i = 1; i < num_vectors; i++)
+            labels_delta_u[i] = (uint8_t)(labels[i] - labels[i-1] + 128);
+
+        t_proc += MPI_Wtime() - tpd0;
+        double H_delta = compute_entropy(labels_delta_u, num_vectors, 256);
+        double td1 = MPI_Wtime();
+        printf("[Delta Encode] Done in %.6f seconds\n", td1 - td0);
+        printf("Entropy after Delta   = %.3f bits/symbol\n", H_delta);
+
+        int huff_data_bytes = 0;
+        int header_bytes    = 0;
+        container = (uint8_t *)malloc(container_capacity(num_vectors, K, vlen));
+        double t_huff0 = MPI_Wtime();
+        container_bytes = container_encode(container, labels_delta_u, num_vectors, codebook_data, K, vlen,
+                                           WIDTH, HEIGHT, &huff_data_bytes, &header_bytes);
+        double t_huff1 = MPI_Wtime();
+        double time_huff = t_huff1 - t_huff0;
+        t_proc += time_huff;
+        int huff_total = (int)container_bytes - K * vlen;   /* header + table + coded bytes */
+        printf("Time (container encode only): %.4f seconds\n\n", time_huff);
+
+        printf("Huffman data bytes  = %d\n", huff_data_bytes);
+        printf("Huffman total bytes = %d\n", huff_total);
+        printf("Header bytes        = %d\n", header_bytes);
+
+        int original_labels = num_vectors;
+        codebook_bytes  = K * vlen;
+        double CR_huff_data  = (huff_data_bytes > 0)
+                               ? (double)original_labels / (double)huff_data_bytes : 0.0;
+        double CR_huff_total = (huff_total > 0)
+                               ? (double)original_labels / (double)huff_total : 0.0;
+        double CR_system     = (double)original_image_bytes /
+                               (double)(codebook_bytes + huff_total);
+
+        printf("\n===== Huffman Compression Results =====\n");
+        printf("Huffman data only      : %.2f X\n", CR_huff_data);
+        printf("Huffman total          : %.2f X\n", CR_huff_total);
+        printf("System total (LBG+Huff): %.2f X  (actual container size)\n", CR_system);
+        printf("\nBPP  = %.4f bits/pixel\n", 8.0 / CR_system);
+
+        double tpr0 = MPI_Wtime();
+        reconstructed = malloc(WIDTH * HEIGHT);
+        int dec_rc = container_decode(container, container_bytes, reconstructed, K, vlen, BLOCK_SIZE, WIDTH, HEIGHT, NULL);
+        t_proc += MPI_Wtime() - tpr0;
+
+        {   /* untimed cross-check: the image decoded from the container must equal the encoder-side reconstruction */
+            uint8_t *chk_lab = (uint8_t *)malloc(num_vectors);
+            chk_lab[0] = labels_delta_u[0];
+            for (int i = 1; i < num_vectors; i++) chk_lab[i] = chk_lab[i-1] + ((int)labels_delta_u[i] - 128);
+            uint8_t *chk_img = (uint8_t *)malloc(WIDTH * HEIGHT);
+            decompress_image(chk_img, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, chk_lab);
+            printf("Container decode check: %s\n", (dec_rc == 0 && memcmp(chk_img, reconstructed, (size_t)WIDTH * HEIGHT) == 0)
+                   ? "OK (image decoded from the container is identical to the encoder-side reconstruction)" : "ERROR (mismatch!)");
+            free(chk_lab); free(chk_img);
+        }
+
+    }
+
+    if (rank == 0) {
+        FILE *file1 = fopen("decompress.txt", "w");
+        for (size_t i = 0; i < (size_t)(WIDTH*HEIGHT); i++)
+            fprintf(file1, "%u\n", reconstructed[i]);
+        fclose(file1);
+
+        {   /* write the real compressed file and verify it by reading it back (not timed) */
+            FILE *fc = fopen("compressed.bin", "wb");
+            fwrite(container, 1, container_bytes, fc);
+            fclose(fc);
+            FILE *fr = fopen("compressed.bin", "rb");
+            uint8_t *rb = (uint8_t *)malloc(container_bytes); size_t got = fread(rb, 1, container_bytes, fr); fclose(fr);
+            uint8_t *rimg = (uint8_t *)malloc(WIDTH * HEIGHT);
+            int rrc = container_decode(rb, got, rimg, K, vlen, BLOCK_SIZE, WIDTH, HEIGHT, NULL);
+            printf("File round-trip check (compressed.bin, %zu bytes): %s\n", container_bytes,
+                   (rrc == 0 && memcmp(rimg, reconstructed, (size_t)WIDTH * HEIGHT) == 0) ? "OK" : "ERROR (mismatch!)");
+            free(rb); free(rimg);
+        }
+
+        save_bmp_gray("original.bmp",   image,                  WIDTH, HEIGHT);
+        save_bmp_gray("compressed.bmp", reconstructed, WIDTH, HEIGHT);
+        printf("Saved: original.bmp  compressed.bmp\n");
+
+        double mse  = compute_mse(image, reconstructed, WIDTH*HEIGHT);
+        double psnr = compute_psnr(image, reconstructed, WIDTH*HEIGHT);
+        printf("MSE = %.2f\n", mse);
+        printf("PSNR = %.2f dB\n", psnr);
+
+        int indexes_bytes = num_vectors;
+        int original_bytes = WIDTH * HEIGHT;
+        double CR = (double)original_bytes / (codebook_bytes + indexes_bytes);
+        printf("VQ-only CR (fixed 8-bit indices, no Huffman): %.2f\n", CR);
+
+        memcpy(ssim_a, image,                  (size_t)WIDTH * HEIGHT);
+        memcpy(ssim_b, reconstructed, (size_t)WIDTH * HEIGHT);
+
+        free(codebook_data);
+        free(container);
+        free(reconstructed_lbg);
+        free(labels_delta_u);
+        free(reconstructed);
+        free(image);
+        free(training_set);
+        free(labels);
+    }
+
+    MPI_Bcast(ssim_a, WIDTH * HEIGHT, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+    MPI_Bcast(ssim_b, WIDTH * HEIGHT, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double sp0 = MPI_Wtime();
+    double ssim_par_val = SSIM_window_based_parallel(ssim_a, ssim_b, WIDTH, HEIGHT, rank, size);
+    MPI_Barrier(MPI_COMM_WORLD);
+    double sp1 = MPI_Wtime();
+
+    if (rank == 0) {
+        double ssim_par_time = sp1 - sp0;
+        printf("SSIM (parallel)   = %.4f  |  time = %.6f s  (np=%d)\n",
+               ssim_par_val, ssim_par_time, size);
+    }
+
+    free(ssim_a);
+    free(ssim_b);
+
+    free(local_v);
+    free(local_vf);
+    free(codebook_flat);
+    free(local_labels);
+    free(vec_counts); free(vec_displs);
+    free(byte_counts); free(byte_displs);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) {
+        double time_taken = MPI_Wtime() - t_total0;
+        printf("Total execution time (complete program, incl. I/O and metrics): %.3f seconds\n", time_taken);
+        printf("Total processing time (no I/O, no console output, no quality metrics): %.4f seconds\n", t_proc);
+    }
+
+    return 0;
+}
+
+/* ============================================================
+   ------------------------ COLOR PATH -----------------------------
+   Complete pipeline for one color image: the R, G and B channels are processed in turn.
+   ============================================================ */
+typedef struct {
+    double mse, psnr, ssim;
+    double lbg_time;
+    int compressed_bytes;
+    uint8_t *reconstructed;
+    uint8_t *container; size_t container_bytes;
+} ChannelResult;
+
+static int run_color_parallel(int argc, char *argv[], int rank, int size, const char *image_path)
+{
+    (void)argc; (void)argv;
+
+    const int K    = CODEBOOK_SIZE;
+    const int vlen = BLOCK_SIZE * BLOCK_SIZE;
+    const int num_vectors = (WIDTH / BLOCK_SIZE) * (HEIGHT / BLOCK_SIZE);
+    const int channel_bytes = WIDTH * HEIGHT;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double t_total0 = MPI_Wtime();
+    double t_proc = 0.0;   /* total processing time accumulator */
+
+    uint8_t *R = NULL, *G = NULL, *B = NULL;
+    uint8_t *channels[3] = {NULL, NULL, NULL};
+    const char *channel_names[3] = {"Red", "Green", "Blue"};
+
+    if (rank == 0) {
+        R = (uint8_t*)malloc(channel_bytes);
+        G = (uint8_t*)malloc(channel_bytes);
+        B = (uint8_t*)malloc(channel_bytes);
+        if (!R || !G || !B) { fprintf(stderr, "malloc RGB failed\n"); MPI_Abort(MPI_COMM_WORLD, 1); }
+
+        if (!read_color_image_from_txt(image_path, R, G, B, WIDTH, HEIGHT)) {
+            fprintf(stderr, "Failed to read color image from text file.\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        printf("===== Processing color image: %s (%dx%d) — parallel, np=%d =====\n",
+               image_path, WIDTH, HEIGHT, size);
+
+        channels[0] = R; channels[1] = G; channels[2] = B;
+    }
+
+    int *vec_counts  = (int *)calloc(size, sizeof(int));
+    int *vec_displs  = (int *)malloc(size * sizeof(int));
+    int *byte_counts = (int *)malloc(size * sizeof(int));
+    int *byte_displs = (int *)malloc(size * sizeof(int));
+
+    /* computed ONCE for all 3 channels (the same distribution is reused for the three channels) */
+    double tpc0 = MPI_Wtime();
+    compute_vector_distribution(num_vectors, vlen, rank, size,
+                                 vec_counts, vec_displs, byte_counts, byte_displs);
+    t_proc += MPI_Wtime() - tpc0;
+
+    int local_n = vec_counts[rank];
+
+    uint8_t *ssim_a = (uint8_t *)malloc((size_t)channel_bytes);
+    uint8_t *ssim_b = (uint8_t *)malloc((size_t)channel_bytes);
+
+    ChannelResult results[3];
+    memset(results, 0, sizeof(results));
+
+    for (int ch = 0; ch < 3; ch++) {
+
+        uint8_t *training_set = NULL;
+        if (rank == 0) {
+            double tpa = MPI_Wtime();
+            int nv = build_training_vectors(channels[ch], &training_set);
+            t_proc += MPI_Wtime() - tpa;
+            if (nv != num_vectors) {
+                fprintf(stderr, "Unexpected vector count for %s channel.\n", channel_names[ch]);
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+        }
+
+        uint8_t *local_v = (uint8_t *)malloc((size_t)local_n * vlen);
+        double tpb0 = MPI_Wtime();
+        MPI_Scatterv(training_set, byte_counts, byte_displs, MPI_UINT8_T,
+                     local_v,      local_n * vlen,           MPI_UINT8_T,
+                     0, MPI_COMM_WORLD);
+
+        float *codebook_flat = (float *)calloc((size_t)K * vlen, sizeof(float));
+        {
+            double *local_mean = (double *)calloc(vlen, sizeof(double));
+            for (int i = 0; i < local_n; i++)
+                for (int j = 0; j < vlen; j++)
+                    local_mean[j] += (double)local_v[i * vlen + j];
+            MPI_Allreduce(MPI_IN_PLACE, local_mean, vlen,
+                          MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            for (int j = 0; j < vlen; j++)
+                codebook_flat[j] = (float)(local_mean[j] / (double)num_vectors);
+            free(local_mean);
+        }
+
+        float *local_vf = (float *)malloc((size_t)local_n * vlen * sizeof(float));
+        for (int i = 0; i < local_n * vlen; i++)
+            local_vf[i] = (float)local_v[i];
+
+        uint8_t *labels = NULL;
+        if (rank == 0) labels = (uint8_t *)calloc(num_vectors, sizeof(uint8_t));
+        uint8_t *local_labels = (uint8_t *)calloc(local_n, sizeof(uint8_t));
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        double t0 = MPI_Wtime();
+        int lbg_iters = parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
+                    codebook_flat, local_labels, rank, size, 0);
+        MPI_Barrier(MPI_COMM_WORLD);
+        double t1 = MPI_Wtime();
+        double lbg_time = t1 - t0;
+
+        MPI_Gatherv(local_labels, local_n,                MPI_UINT8_T,
+                    labels,       vec_counts, vec_displs, MPI_UINT8_T,
+                    0, MPI_COMM_WORLD);
+        t_proc += MPI_Wtime() - tpb0;
+
+        uint8_t *labels_delta_u = NULL, *reconstructed = NULL;
+
+        if (rank == 0) {
+            printf("\n  [%s channel] LBG time=%.4fs  LBG iters=%d\n", channel_names[ch], lbg_time, lbg_iters);
+
+            double tpr0 = MPI_Wtime();
+            labels_delta_u = (uint8_t*)malloc(num_vectors);
+            labels_delta_u[0] = labels[0];
+            for (int i = 1; i < num_vectors; i++)
+                labels_delta_u[i] = (uint8_t)(labels[i] - labels[i-1] + 128);
+
+            uint8_t *cb_u8 = (uint8_t *)malloc((size_t)K * vlen);
+            for (int i = 0; i < K * vlen; i++) cb_u8[i] = (uint8_t)roundf(codebook_flat[i]);
+            int huff_data_bytes = 0, header_bytes = 0;
+            results[ch].container = (uint8_t *)malloc(container_capacity(num_vectors, K, vlen));
+            results[ch].container_bytes = container_encode(results[ch].container, labels_delta_u, num_vectors, cb_u8, K, vlen,
+                                                           WIDTH, HEIGHT, &huff_data_bytes, &header_bytes);
+            (void)huff_data_bytes; (void)header_bytes;
+            results[ch].compressed_bytes = (int)results[ch].container_bytes;
+            results[ch].lbg_time = lbg_time;
+
+            reconstructed = (uint8_t*)malloc(channel_bytes);
+            int dec_rc = container_decode(results[ch].container, results[ch].container_bytes, reconstructed, K, vlen,
+                                          BLOCK_SIZE, WIDTH, HEIGHT, NULL);
+            t_proc += MPI_Wtime() - tpr0;
+
+            {   /* untimed cross-check against the encoder-side reconstruction */
+                uint8_t *chk_lab = (uint8_t *)malloc(num_vectors);
+                chk_lab[0] = labels_delta_u[0];
+                for (int i = 1; i < num_vectors; i++) chk_lab[i] = chk_lab[i-1] + ((int)labels_delta_u[i] - 128);
+                uint8_t *chk_img = (uint8_t *)malloc(channel_bytes);
+                decompress_image(chk_img, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, chk_lab);
+                printf("  [%s channel] Container decode check: %s\n", channel_names[ch],
+                       (dec_rc == 0 && memcmp(chk_img, reconstructed, (size_t)channel_bytes) == 0) ? "OK" : "ERROR (mismatch!)");
+                free(chk_lab); free(chk_img);
+            }
+            free(cb_u8);
+
+        }
+
+        if (rank == 0) {
+
+            results[ch].mse  = compute_mse(channels[ch], reconstructed, channel_bytes);
+            results[ch].psnr = compute_psnr(channels[ch], reconstructed, channel_bytes);
+            results[ch].reconstructed = reconstructed;
+
+            printf("  [%s channel] PSNR=%.2f dB  CR(system)=%.2fX\n",
+                   channel_names[ch], results[ch].psnr,
+                   (double)channel_bytes / (double)results[ch].compressed_bytes);
+
+            memcpy(ssim_a, channels[ch],        channel_bytes);
+            memcpy(ssim_b, reconstructed, channel_bytes);
+
+            free(labels_delta_u);
+            free(labels);
+            free(training_set);
+        }
+
+        MPI_Bcast(ssim_a, channel_bytes, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+        MPI_Bcast(ssim_b, channel_bytes, MPI_UINT8_T, 0, MPI_COMM_WORLD);
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        double sp0 = MPI_Wtime();
+        double ssim_val = SSIM_window_based_parallel(ssim_a, ssim_b, WIDTH, HEIGHT, rank, size);
+        MPI_Barrier(MPI_COMM_WORLD);
+        double sp1 = MPI_Wtime();
+
+        if (rank == 0) {
+            results[ch].ssim = ssim_val;
+            printf("  [%s channel] SSIM=%.4f  (SSIM time=%.4fs)\n",
+                   channel_names[ch], ssim_val, sp1 - sp0);
+        }
+
+        free(local_v);
+        free(local_vf);
+        free(codebook_flat);
+        free(local_labels);
+    }
+
+    if (rank == 0) {
+        int total_samples = 3 * channel_bytes;
+        double rgb_mse = (results[0].mse * channel_bytes +
+                          results[1].mse * channel_bytes +
+                          results[2].mse * channel_bytes) / total_samples;
+        double rgb_psnr = (rgb_mse == 0.0) ? 100.0 : 10.0 * log10((255.0*255.0) / rgb_mse);
+
+        int total_original_bytes   = total_samples;
+        int total_compressed_bytes = results[0].compressed_bytes +
+                                     results[1].compressed_bytes +
+                                     results[2].compressed_bytes;
+        double rgb_cr = (double)total_original_bytes / (double)total_compressed_bytes;
+
+        double mean_channelwise_ssim = (results[0].ssim + results[1].ssim + results[2].ssim) / 3.0;
+        double total_lbg_time = results[0].lbg_time + results[1].lbg_time + results[2].lbg_time;
+
+        save_bmp_color("original_color.bmp", R, G, B, WIDTH, HEIGHT);
+        save_bmp_color("compressed_color.bmp",
+                       results[0].reconstructed,
+                       results[1].reconstructed,
+                       results[2].reconstructed,
+                       WIDTH, HEIGHT);
+
+        {   /* write the real compressed file (3 containers back to back) and verify it by reading it back (not timed) */
+            size_t tot = results[0].container_bytes + results[1].container_bytes + results[2].container_bytes;
+            FILE *fc = fopen("compressed_color.bin", "wb");
+            for (int c = 0; c < 3; c++) fwrite(results[c].container, 1, results[c].container_bytes, fc);
+            fclose(fc);
+            FILE *fr = fopen("compressed_color.bin", "rb");
+            uint8_t *rb = (uint8_t *)malloc(tot); size_t got = fread(rb, 1, tot, fr); fclose(fr);
+            uint8_t *rimg = (uint8_t *)malloc(channel_bytes);
+            int ok = 1; size_t off = 0;
+            for (int c = 0; c < 3 && ok; c++) {
+                size_t used_bytes = 0;
+                int rrc = container_decode(rb + off, got - off, rimg, K, vlen, BLOCK_SIZE, WIDTH, HEIGHT, &used_bytes);
+                if (rrc != 0 || memcmp(rimg, results[c].reconstructed, (size_t)channel_bytes) != 0) ok = 0;
+                off += used_bytes;
+            }
+            printf("File round-trip check (compressed_color.bin, %zu bytes): %s\n", tot, ok ? "OK" : "ERROR (mismatch!)");
+            free(rb); free(rimg);
+        }
+
+        printf("\n===== COLOR IMAGE — AGGREGATE RESULTS (parallel, np=%d) =====\n", size);
+        printf("RGB PSNR                  : %.2f dB\n", rgb_psnr);
+        printf("Mean Channel-wise SSIM    : %.4f\n", mean_channelwise_ssim);
+        printf("RGB MSE                   : %.2f\n", rgb_mse);
+        printf("RGB CR (system)           : %.2f X  (actual container size)\n", rgb_cr);
+        printf("Total LBG time (R+G+B)    : %.4f s\n", total_lbg_time);
+        printf("Saved: original_color.bmp  compressed_color.bmp\n");
+        printf("====================================================================\n");
+
+        free(R); free(G); free(B);
+        free(results[0].reconstructed);
+        free(results[1].reconstructed);
+        free(results[2].reconstructed);
+        for (int c = 0; c < 3; c++) free(results[c].container);
+    }
+
+    free(ssim_a); free(ssim_b);
+    free(vec_counts); free(vec_displs);
+    free(byte_counts); free(byte_displs);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) {
+        double time_taken = MPI_Wtime() - t_total0;
+        printf("Total execution time (complete program, incl. I/O and metrics): %.3f seconds\n", time_taken);
+        printf("Total processing time (no I/O, no console output, no quality metrics): %.4f seconds\n", t_proc);
+    }
+
+    return 0;
+}
+
+/* ============================================================
+   MAIN — picks mode via --gray/--color or auto-detection
+   (rank 0 decides, then broadcasts the mode to all processes)
+   ============================================================ */
+int main(int argc, char *argv[])
+{
+    MPI_Init(&argc, &argv);
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    const char *image_path = (argc > 1) ? argv[1] : "img.txt";
+    int mode_int = MODE_UNKNOWN;
+
+    if (rank == 0) {
+        ImgMode mode = MODE_UNKNOWN;
+        if (argc > 2) {
+            if      (strcmp(argv[2], "--gray")  == 0) mode = MODE_GRAY;
+            else if (strcmp(argv[2], "--color") == 0) mode = MODE_COLOR;
+            else {
+                fprintf(stderr, "Unknown flag '%s' (expected --gray or --color)\n", argv[2]);
+                mode = MODE_UNKNOWN;
+            }
+        } else {
+            mode = detect_mode_from_file(image_path);
+            if (mode != MODE_UNKNOWN)
+                printf("[Mode] auto-detected: %s\n", mode == MODE_GRAY ? "grayscale" : "color");
+        }
+        mode_int = (int)mode;
+        if (mode_int == MODE_UNKNOWN) {
+            fprintf(stderr,
+                "Could not determine image mode for '%s'. Pass --gray or --color explicitly:\n"
+                "  mpirun -np N %s %s --gray\n  mpirun -np N %s %s --color\n",
+                image_path, argv[0], image_path, argv[0], image_path);
+        }
+    }
+
+    MPI_Bcast(&mode_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (mode_int == MODE_UNKNOWN) {
+        MPI_Finalize();
+        return 1;
+    }
+
+    int rc;
+    if (mode_int == MODE_GRAY)
+        rc = run_gray_parallel(argc, argv, rank, size, image_path);
+    else
+        rc = run_color_parallel(argc, argv, rank, size, image_path);
+
+    MPI_Finalize();
+    return rc;
+}
