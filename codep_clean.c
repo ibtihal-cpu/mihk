@@ -236,7 +236,7 @@ static inline float distance16f(const float * __restrict__ a,
 
 /* micro-benchmark mirroring the LBG assignment kernel; returns this
    rank's throughput in "distance comparisons per second" so vectors
-   can be handed out proportional to measured speed (np>4 path). */
+   can be handed out proportional to measured speed (adaptive split). */
 static double calibrate_speed(void)
 {
     enum { NV = 512, NC = 64, REP = 2, CVLEN = 16 };
