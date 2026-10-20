@@ -25,7 +25,7 @@ ax.text(4.85, 8.25, "Delta-coded indices D (21 symbols)", ha="center", va="cente
 ax.text(4.85, 7.55, "128 ×7,  127 ×6,  129 ×5,  126 ×2,  130 ×1", ha="center", va="center", fontsize=14, family="monospace", color=INK, fontweight="bold")
 ax.add_patch(FancyArrowPatch((4.85, 7.15), (4.85, 6.6), arrowstyle="-|>", mutation_scale=26, lw=3, color=INK))
 cols = ["Symbol\n(D)", "Frequency", "Huffman\ncode", "Canonical\ncode"]
-xs = [1.2, 3.45, 5.7, 7.95]; ws = [1.9, 2.4, 2.1, 2.1]; cc = [TEAL, TEAL, TEAL, MAG]
+xs = [1.2, 3.45, 5.7, 7.95]; ws = [1.9, 2.4, 2.1, 2.1]; cc = [TEAL, TEAL, TEAL, TEAL]
 for x, w, t, col in zip(xs, ws, cols, cc):
     ax.add_patch(FancyBboxPatch((x - w / 2, 5.55), w, 0.95, boxstyle="round,pad=0.02,rounding_size=0.15", fc=col, ec=col))
     ax.text(x, 6.025, t, ha="center", va="center", color="white", fontsize=12.5, fontweight="bold", linespacing=1.1)
@@ -36,13 +36,13 @@ for r, s in enumerate(syms):
     vals = [str(s), str(freq[s]), tree_code[s], canon[s]]
     for i, (x, v) in enumerate(zip(xs, vals)):
         ax.text(x, y, v, ha="center", va="center", fontsize=16, family="monospace" if i != 1 else None,
-                color=(MAG if i == 3 else INK), fontweight="bold" if i >= 2 else "normal")
+                color=(TEAL if i == 3 else INK), fontweight="bold" if i >= 2 else "normal")
 
 # ---------------- right: tree ----------------
 ox, oy, sx, sy = 10.4, 0.2, 0.93, 1.0   # offset and scale of the tree coordinates
 nodes = {
-    "root": (5.0, 7.0, "21", PUR), "n8": (2.5, 5.55, "8", PUR), "n13": (7.5, 5.55, "13", PUR),
-    "n3": (1.3, 4.1, "3", PUR), "l129": (3.7, 4.1, "5", ORG), "l127": (6.5, 4.1, "6", ORG), "l128": (8.5, 4.1, "7", ORG),
+    "root": (5.0, 7.0, "21", TEAL), "n8": (2.5, 5.55, "8", TEAL), "n13": (7.5, 5.55, "13", TEAL),
+    "n3": (1.3, 4.1, "3", TEAL), "l129": (3.7, 4.1, "5", ORG), "l127": (6.5, 4.1, "6", ORG), "l128": (8.5, 4.1, "7", ORG),
     "l130": (0.45, 2.65, "1", ORG), "l126": (2.15, 2.65, "2", ORG),
 }
 edges = [("root", "n8", "0"), ("root", "n13", "1"), ("n8", "n3", "0"), ("n8", "l129", "1"),
@@ -57,8 +57,9 @@ for a, b, lab in edges:
             fontsize=15, fontweight="bold", color=DEEP, bbox=dict(boxstyle="circle,pad=0.1", fc="white", ec="none"))
 for k, (x, y, t, col) in nodes.items():
     px, py = P(x, y)
-    ax.add_patch(Circle((px, py), 0.42, fc=col, ec="white", lw=2, zorder=3))
-    ax.text(px, py, t, ha="center", va="center", color="white", fontsize=15, fontweight="bold", zorder=4)
+    isleaf = k.startswith("l")
+    ax.add_patch(Circle((px, py), 0.42, fc=("white" if isleaf else col), ec=TEAL, lw=2.6, zorder=3))
+    ax.text(px, py, t, ha="center", va="center", color=(TEAL if isleaf else "white"), fontsize=15, fontweight="bold", zorder=4)
 for k, s in leaf.items():
     px, py = P(*nodes[k][:2])
     ax.add_patch(FancyBboxPatch((px - 0.62, py - 1.45), 1.24, 0.95, boxstyle="round,pad=0.02,rounding_size=0.12", fc=YEL, ec=TEAL, lw=2.2, zorder=2))
