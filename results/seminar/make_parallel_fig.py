@@ -24,12 +24,15 @@ ax.text(8,32.5,"Input image",ha="center",fontsize=12,fontweight="bold",color=INK
 ax.text(8,15.5,"512×512",ha="center",fontsize=11,color=INK)
 ax.text(8,13,"16,384 blocks\n(4×4 pixels)",ha="center",va="top",fontsize=10.5,color=PURPLE,fontweight="bold")
 
-arrow(15,24,22,24)
-ax.text(18.5,26.2,"Scatterv",ha="center",fontsize=10,color=MAG,fontweight="bold")
+arrow(15,24,20.4,24)
+ax.plot([21.3,21.3],[15.5,37.8],color=INK,lw=2.6,solid_capstyle="round")
+for yy in [36,29,22,15]:
+    ax.add_patch(FancyArrowPatch((21.3,yy+1.25),(22.9,yy+1.25),arrowstyle="-|>",mutation_scale=13,lw=2.2,color=INK))
+ax.text(17.7,25.6,"Scatterv",ha="center",fontsize=9,color=MAG,fontweight="bold")
 
 # 2 ranks
 cols=[PURPLE,PURPLE,TEAL,TEAL]
-labs=["Rank 0\nP-core","Rank 1\nP-core","Rank 2\nE-core","Rank P−1\nE-core"]
+labs=["Process 0\nP-core","Process 1\nP-core","Process 2\nE-core","Process P−1\nE-core"]
 shares=["larger share","larger share","smaller share","smaller share"]
 ys=[36,29,22,15]
 for y,c,l,s in zip(ys,cols,labs,shares):
@@ -39,17 +42,20 @@ ax.text(31,9.6,"Adaptive: chunk size ∝ core speed",ha="center",fontsize=10,col
 
 # 3 local assignment
 box(52,17,16,14,GOLD,"Local step:\nnearest codeword\nfor each block\n(main cost of LBG)",tc=INK,fs=10.5)
-for y in ys: arrow(39.5,y+1.7,51.7,24,c="#999999")
-ax.text(60,33.0,"in parallel",ha="center",fontsize=12,fontweight="bold",color=MAG)
+for y,ty in zip(ys,[29.0,25.7,22.3,19.0]): arrow(39.6,y+1.25,51.6,ty,c="#4A4A4A")
+ax.text(56,33.2,"in parallel",ha="center",fontsize=12,fontweight="bold",color=MAG)
 
 arrow(68.5,24,77.5,24)
-ax.text(73,26.3,"Allreduce",ha="center",fontsize=10,color=MAG,fontweight="bold")
+ax.text(73,26.4,"Allreduce",ha="center",fontsize=11,color=MAG,fontweight="bold")
+ax.text(73,21.4,"sums from all\nprocesses",ha="center",va="top",fontsize=8.5,color=INK)
 
 # 4 codebook
 box(78,17,11,14,MAG,"New\ncodebook\nK = 64",fs=12)
 arrow(89.5,24,92.3,24)
 box(92.8,19.5,6.4,9,DEEP,"Repeat\nuntil\nconverged",fs=8.5)
 # loop arrow back
-ax.annotate("",xy=(63,31.6),xytext=(96,29.2),arrowprops=dict(arrowstyle="-|>",color=DEEP,lw=2,connectionstyle="arc3,rad=0.45",linestyle="--"))
+ax.plot([96,96,64],[29.2,40.2,40.2],color=DEEP,lw=2.4,ls="--",solid_capstyle="round")
+ax.add_patch(FancyArrowPatch((64,40.2),(64,31.6),arrowstyle="-|>",mutation_scale=22,lw=2.4,color=DEEP,linestyle="--"))
+ax.text(80,41.2,"next iteration (new codebook sent to all processes)",ha="center",fontsize=9.5,color=DEEP,style="italic")
 
 plt.savefig("/home/user/mihk/results/seminar/figs/parallel_overview.png",bbox_inches="tight",facecolor="white")
