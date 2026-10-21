@@ -33,10 +33,11 @@
  *  Times that are printed (seconds, measured on process 0 with MPI_Wtime):
  *      LBG time                : only the LBG training (the initial global mean is included in the sequential
  *                                program and computed just before the timer in the parallel program).
- *      Total processing time   : training vectors, work distribution / calibration / scatter / gather (parallel
- *                                only), LBG, 8-bit codebook, delta coding, Huffman container, decoding.  It does
- *                                NOT include reading the image, printing, writing files, entropy statistics, or
- *                                MSE/PSNR/SSIM.  The sequential and parallel programs count the same stages.
+ *      Total processing time   : work distribution / calibration / scatter / gather, LBG, delta coding,
+ *                                Huffman container and decoding.
+ *                                It does NOT include reading the image, building the training vectors,
+ *                                printing, writing files, entropy statistics, or MSE/PSNR/SSIM.
+ *                                The sequential and parallel programs count the same stages.
  *
  *  Usage:
  *      mpicc -O2 -Wall -o lbg_par <this file> -lm
@@ -939,9 +940,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-        double tpa = MPI_Wtime();
         num_vectors = build_training_vectors(image, &training_set);
-        t_proc += MPI_Wtime() - tpa;
         printf("Built %d training vectors (each %d elements)\n", num_vectors, vlen);
     }
 
@@ -1021,12 +1020,10 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
         double H = compute_entropy(labels, num_vectors, K);
         printf("Entropy before Huffman = %.3f bits/symbol\n", H);
 
-        double tpc_c = MPI_Wtime();   /* 8-bit codebook = part of the container (timed here, as in the colour path) */
         codebook_data = malloc(K * vlen);
         for (int k = 0; k < K; k++)
             for (int i = 0; i < vlen; i++)
                 codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
-        t_proc += MPI_Wtime() - tpc_c;
         printf("Codebook converted to uint8_t (size = %d bytes)\n", K * vlen);
 
         double tpd0 = MPI_Wtime();
@@ -1227,9 +1224,7 @@ static int run_color_parallel(int argc, char *argv[], int rank, int size, const 
 
         uint8_t *training_set = NULL;
         if (rank == 0) {
-            double tpa = MPI_Wtime();
             int nv = build_training_vectors(channels[ch], &training_set);
-            t_proc += MPI_Wtime() - tpa;
             if (nv != num_vectors) {
                 fprintf(stderr, "Unexpected vector count for %s channel.\n", channel_names[ch]);
                 MPI_Abort(MPI_COMM_WORLD, 1);
