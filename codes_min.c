@@ -32,10 +32,10 @@
  *  Times that are printed (seconds):
  *      LBG time                : only the LBG training (the initial global mean is included in the sequential
  *                                program and computed just before the timer in the parallel program).
- *      Total processing time   : LBG, delta coding, Huffman container and decoding.
- *                                It does NOT include reading the image, building the training vectors,
- *                                printing, writing files, entropy statistics, or MSE/PSNR/SSIM.
- *                                The sequential and parallel programs count the same stages.
+ *      Total processing time   : training vectors, work distribution / calibration / scatter / gather (parallel
+ *                                only), LBG, 8-bit codebook, delta coding, Huffman container, decoding.  It does
+ *                                NOT include reading the image, printing, writing files, entropy statistics, or
+ *                                MSE/PSNR/SSIM.  The sequential and parallel programs count the same stages.
  *
  *  Usage:
  *      gcc -O2 -Wall -o lbg_seq <this file> -lm
@@ -790,8 +790,10 @@ static int run_grayscale(const char *image_path)
         return 1;
     }
 
+    double t_build0 = wtime();
     uint8_t *training_set = NULL;
     int num_vectors = build_training_vectors(image, &training_set);
+    double t_build1 = wtime();
     printf("Built %d training vectors (each %d elements)\n", num_vectors, VLEN);
 
     uint8_t *labels = malloc(num_vectors);
@@ -799,8 +801,10 @@ static int run_grayscale(const char *image_path)
 
     float *training_f = (float*)malloc((size_t)num_vectors * VLEN * sizeof(float));
     if (!training_f) { perror("malloc training_f"); exit(1); }
+    double t_f32a = wtime();
     for (int i = 0; i < num_vectors * VLEN; i++)
         training_f[i] = (float)training_set[i];
+    double tt_f32 = wtime() - t_f32a;
 
     double  t_lbg0     = wtime();
     int lbg_iters = lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
@@ -811,10 +815,12 @@ static int run_grayscale(const char *image_path)
     double H = compute_entropy(labels, num_vectors, CODEBOOK_SIZE);
     printf("Entropy before Huffman = %.3f bits/symbol\n", H);
 
+    double t_cvt0 = wtime();
     uint8_t *codebook_data = malloc(CODEBOOK_SIZE * VLEN);
     for (int k = 0; k < CODEBOOK_SIZE; k++)
         for (int i = 0; i < VLEN; i++)
             codebook_data[k * VLEN + i] = (uint8_t)roundf(codebook[k * VLEN + i]);
+    double t_cvt1 = wtime();
 
     double t_delta0 = wtime();
     uint8_t *labels_delta_u = malloc(num_vectors);
@@ -905,12 +911,14 @@ static int run_grayscale(const char *image_path)
     save_bmp_gray("compressed_raw.bmp",      reconstructed,          WIDTH, HEIGHT);
     printf("Saved: original.bmp  compressed_raw.bmp\n");
 
+    double tt_build  = t_build1 - t_build0;
     double tt_lbg    = t_lbg1   - t_lbg0;
+    double tt_cvt    = t_cvt1   - t_cvt0;
     double tt_delta  = t_delta1 - t_delta0;
     double tt_huff   = t_huff1  - t_huff0;
     double tt_rec    = t_rec1   - t_rec0;
     /* Total processing time: the same stages as the parallel and colour paths. */
-    double tt_proc   = tt_lbg + tt_delta + tt_huff + tt_rec;
+    double tt_proc   = tt_build + tt_f32 + tt_lbg + tt_cvt + tt_delta + tt_huff + tt_rec;
 
     printf("LBG iterations: %d\n", lbg_iters);
     printf("LBG time: %.4f s\n", tt_lbg);
@@ -957,6 +965,7 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
     memcpy(original_channel, channel_image, WIDTH * HEIGHT);
 
     uint8_t *training_set = NULL;
+    double tp_a = wtime();
     int num_vectors = build_training_vectors(channel_image, &training_set);
     if (num_vectors <= 0 || !training_set) {
         fprintf(stderr, "Failed to build training vectors.\n");
@@ -970,6 +979,7 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
     for (int i = 0; i < num_vectors * VLEN; i++)
         training_f[i] = (float)training_set[i];
 
+    res.proc_time += wtime() - tp_a;
     double t_lbg0 = wtime();
     res.lbg_iters = lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
     double t_lbg1 = wtime();
