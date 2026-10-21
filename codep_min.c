@@ -1000,7 +1000,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
     uint8_t *ssim_a = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
     uint8_t *ssim_b = (uint8_t *)malloc((size_t)WIDTH * HEIGHT);
 
-    uint8_t *codebook_data = NULL, *labels_delta_u = NULL;
+    uint8_t *codebook_data = NULL, *reconstructed_lbg = NULL, *labels_delta_u = NULL;
     uint8_t *reconstructed = NULL;
     int codebook_bytes = 0;
     uint8_t *container = NULL; size_t container_bytes = 0;
@@ -1028,6 +1028,14 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
                 codebook_data[k * vlen + i] = (uint8_t) roundf(codebook_flat[k * vlen + i]);
         t_proc += MPI_Wtime() - tpc_c;
         printf("Codebook converted to uint8_t (size = %d bytes)\n", K * vlen);
+
+        reconstructed_lbg = malloc(WIDTH * HEIGHT);
+        decompress_image(reconstructed_lbg, WIDTH, HEIGHT, BLOCK_SIZE, codebook_flat, labels);
+
+        FILE *flbg = fopen("lbg_decompress.txt", "w");
+        for (size_t i = 0; i < (size_t)(WIDTH*HEIGHT); i++)
+            fprintf(flbg, "%u\n", reconstructed_lbg[i]);
+        fclose(flbg);
 
         double tpd0 = MPI_Wtime();
         labels_delta_u = malloc(num_vectors);
@@ -1125,6 +1133,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
 
         free(codebook_data);
         free(container);
+        free(reconstructed_lbg);
         free(labels_delta_u);
         free(reconstructed);
         free(image);
