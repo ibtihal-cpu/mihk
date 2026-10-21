@@ -822,9 +822,6 @@ static int run_grayscale(const char *image_path)
             codebook_data[k * VLEN + i] = (uint8_t)roundf(codebook[k * VLEN + i]);
     double t_cvt1 = wtime();
 
-    uint8_t *reconstructed_lbg = malloc(WIDTH * HEIGHT);
-    decompress_image(reconstructed_lbg, WIDTH, HEIGHT, BLOCK_SIZE, codebook, labels);
-
     double t_delta0 = wtime();
     uint8_t *labels_delta_u = malloc(num_vectors);
     labels_delta_u[0] = labels[0];
@@ -892,11 +889,6 @@ static int run_grayscale(const char *image_path)
     double ssim = SSIM_window_based(image, reconstructed, WIDTH, HEIGHT);
     printf("SSIM = %.4f\n", ssim);
 
-    FILE *flbg = fopen("lbg_decompress.txt", "w");
-    for (size_t i = 0; i < (size_t)WIDTH * HEIGHT; i++)
-        fprintf(flbg, "%u\n", reconstructed_lbg[i]);
-    fclose(flbg);
-
     FILE *file1 = fopen("decompress.txt", "w");
     for (size_t i = 0; i < (size_t)WIDTH*HEIGHT; i++)
         fprintf(file1, "%u\n", reconstructed[i]);
@@ -940,7 +932,6 @@ static int run_grayscale(const char *image_path)
     free(training_set);
     free(image);
     free(reconstructed);
-    free(reconstructed_lbg);
 
     return 0;
 }
