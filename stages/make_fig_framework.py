@@ -13,7 +13,7 @@ C = dict(s1='#2F6DB5', s2a='#5E7385', s2b='#C98424', s3='#2A8C82', s4='#6A4C93')
 def rbox(x, y, w, h, fc, ec, lw=2.0, r=0.14, ls='-', z=1):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle=f'round,pad=0.01,rounding_size={r}', fc=fc, ec=ec, lw=lw, ls=ls, zorder=z))
 def txt(x, y, s, fs=12, bold=False, color='#111111', ha='center', z=5, style='normal'):
-    ax.text(x, y, s, fontsize=fs, fontweight='bold' if bold else 'normal', color=color, ha=ha, va='center', zorder=z, linespacing=1.25, fontstyle=style)
+    ax.text(x, y, s, fontsize=(fs*1.15 if fs < 16 else fs), fontweight='bold' if bold else 'normal', color=color, ha=ha, va='center', zorder=z, linespacing=1.25, fontstyle=style)
 def arrow(x1, y1, x2, y2, lw=2.2, color='#111111', ms=18):
     ax.annotate('', xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle='-|>', lw=lw, color=color, mutation_scale=ms, shrinkA=0, shrinkB=0), zorder=6)
 def line(xs, ys, lw=2.2, color='#111111'):
@@ -39,21 +39,22 @@ PURPLE = ('#E6DCF3', '#8E6BBF'); BLUE = ('#D6E8FA', '#4A90D9'); WHITE = ('#FFFFF
 
 # ---------------- Stage 1 ----------------
 x, w = cols['s1']; cx = x + w/2
-txt(cx, 8.45, 'Input image', fs=13, bold=True)
-txt(cx, 8.05, '512 × 512 (gray / color)', fs=11.5)
-gx, gy, gs = cx - 0.9, 5.95, 0.3
-for i in range(6):
-    for j in range(6):
+txt(cx, 8.75, 'Input image', fs=13, bold=True)
+txt(cx, 8.38, '512 × 512 (gray / color)', fs=11.5)
+gs = 0.22; gx, gy = cx - 4*gs, 6.3
+for i in range(8):
+    for j in range(8):
         ax.add_patch(Rectangle((gx + i*gs, gy + j*gs), gs, gs, fc='#E3E3E3', ec='#8A8A8A', lw=0.8, zorder=3))
-arrow(cx, 5.85, cx, 5.3)
-bx, by, bs = cx - 0.45, 4.2, 0.3
-for i in range(3):
-    for j in range(3):
+ax.add_patch(Rectangle((gx + 2*gs, gy + 2*gs), 4*gs, 4*gs, fc='none', ec='#2F6DB5', lw=2.6, zorder=4))
+arrow(cx, 6.2, cx, 5.7)
+bs = 0.27; bx, by = cx - 2*bs, 4.5
+for i in range(4):
+    for j in range(4):
         ax.add_patch(Rectangle((bx + i*bs, by + j*bs), bs, bs, fc='#E3E3E3', ec='#8A8A8A', lw=0.8, zorder=3))
-ax.add_patch(Rectangle((bx + bs, by + bs), bs, bs, fc='white', ec='#2F6DB5', lw=1.8, zorder=4))
-txt(cx, 3.65, '4 × 4 blocks\n→ 16-D vectors\n(N = 16,384)', fs=12)
-rbox(x + 0.15, 2.1, w - 0.3, 0.95, '#EEF4FB', C['s1'], lw=1.5, r=0.1)
-txt(cx, 2.575, 'Color images: R, G, B channels\nare processed one after another', fs=10.2, style='italic')
+ax.add_patch(Rectangle((bx, by), 4*bs, 4*bs, fc='none', ec='#2F6DB5', lw=2.6, zorder=4))
+txt(cx, 3.98, '4 × 4 blocks\n→ 16-D vectors\n(N = 16,384)', fs=12)
+rbox(x + 0.15, 2.05, w - 0.3, 1.4, '#EEF4FB', C['s1'], lw=1.5, r=0.1)
+txt(cx, 2.75, 'Color images: RGB channels\nare processed sequentially;\nin Stage 2B, LBG is parallelized\nwithin each channel', fs=9.4, style='italic')
 
 # ---------------- Stage 2A ----------------
 x, w = cols['s2a']; cx = x + w/2
@@ -73,8 +74,8 @@ txt(cx, 1.62, 'executed by a single process', fs=10.5, style='italic', color=C['
 # ---------------- Stage 2B ----------------
 x, w = cols['s2b']; cx = x + w/2
 rbox(x + 0.2, 8.1, w - 0.4, 0.8, '#FFF3E0', ORANGE[1], lw=1.6, r=0.1)
-txt(cx, 8.5, 'Work distribution: Equal (P ≤ 6) or Adaptive (P > 6)', fs=10.8, bold=True)
-txt(cx, 8.22, 'MPI_Scatterv sends each process its vectors', fs=10.2)
+txt(cx, 8.5, 'Equal or Adaptive workload distribution', fs=11.2, bold=True)
+txt(cx, 8.22, 'MPI_Scatterv distributes the training vectors', fs=10.2)
 rbox(cx - 1.15, 7.45, 2.3, 0.5, '#FBE8D0', C['s2b'], lw=1.8, r=0.25)
 txt(cx, 7.7, 'Repeat until K = 64', fs=12, bold=True)
 rbox(x + 0.2, 3.4, w - 0.4, 3.85, BLUE[0], BLUE[1], lw=2.0)
@@ -86,14 +87,14 @@ for s, ww in zip(chips, cw):
         rbox(cxs, 6.28, ww, 0.42, '#FFF6E8', '#C0602B', lw=1.3, r=0.08)
     txt(cxs + ww/2, 6.49, s, fs=9.2, bold=True, color='#B03020')
     cxs += ww + 0.12
-items = ['1. Nearest assignment (local vectors)', '2. Local sums, counts, distortion', '3. MPI_Allreduce (global sums)', '4. Codebook update (all processes)', '5. Convergence check']
+items = ['1. Nearest assignment (local vectors)', '2. Local sums, counts, distortion', '3. MPI_Allreduce (global sums, counts, distortion)', '4. Codebook update (all processes)', '5. Convergence check']
 for i, s in enumerate(items):
     yy = 5.75 - i*0.5
     rbox(x + 0.45, yy - 0.2, w - 0.9, 0.4, WHITE[0], WHITE[1], lw=1.3, r=0.08)
     txt(cx, yy, s, fs=10.6)
 arrow(cx, 3.4, cx, 3.12)
 rbox(x + 0.2, 2.1, w - 0.4, 1.0, PURPLE[0], PURPLE[1], lw=2.0)
-txt(cx, 2.6, 'Codebook C (K = 64) + index array L\n(N = 16,384), MPI_Gatherv to Process 0', fs=11.2, bold=True)
+txt(cx, 2.6, 'Codebook C (K = 64) on all processes\nIndex array L (N = 16,384): MPI_Gatherv to Process 0', fs=10.4, bold=True)
 txt(cx, 1.62, 'all MPI processes work together', fs=10.5, style='italic', color=C['s2b'])
 
 # ---------------- Stage 3 ----------------
@@ -103,7 +104,7 @@ txt(cx, 8.35, 'Delta coding', fs=13.5, bold=True)
 txt(cx, 7.75, 'differences of consecutive\nindices (offset 128)', fs=10.8)
 arrow(cx, 7.2, cx, 6.75)
 rbox(x + 0.2, 5.0, w - 0.4, 1.75, BLUE[0], BLUE[1], lw=2.0)
-txt(cx, 6.2, 'Canonical Huffman', fs=13.5, bold=True)
+txt(cx, 6.2, 'Canonical Huffman Coding', fs=11.8, bold=True)
 txt(cx, 5.55, 'variable-length codes built\nfrom code lengths', fs=10.8)
 arrow(cx, 5.0, cx, 4.6)
 rbox(x + 0.2, 2.1, w - 0.4, 2.5, PURPLE[0], PURPLE[1], lw=2.0)
