@@ -5,16 +5,16 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, Polygon, Circle
 
-W, H = 11.9, 19.6
+W, H = 11.9, 20.2
 fig = plt.figure(figsize=(W, H)); ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis('off')
 NAVY = '#14264A'
 PEACH = ('#FDEAD7', '#D49A55'); BLUE = ('#DCEBFA', '#4A90D9'); PURPLE = ('#E6DCF3', '#8E6BBF'); GREEN = ('#E3F1DB', '#6AA84F'); WHITE = ('#FFFFFF', '#9DB8D6')
 X0, X1 = 0.6, 11.0; CX = (X0 + X1) / 2
 
-def rbox(x, y, w, h, col, lw=2.0, r=0.14, ls='-', z=1):
+def rbox(x, y, w, h, col, lw=2.8, r=0.14, ls='-', z=1):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle=f'round,pad=0.01,rounding_size={r}', fc=col[0], ec=col[1], lw=lw, ls=ls, zorder=z))
 def T(x, y, s, fs=13, bold=False, color='#111111', ha='center', z=6):
-    ax.text(x, y, s, fontsize=fs*1.3, fontweight='bold' if bold else 'normal', color=('#000000' if color == '#111111' else color), ha=ha, va='center', zorder=z, linespacing=1.3)
+    ax.text(x, y, s, fontsize=fs*1.42, fontweight='bold', color=('#000000' if color == '#111111' else color), ha=ha, va='center', zorder=z, linespacing=1.3)
 def arrow(x1, y1, x2, y2, lw=2.8, ms=20):
     ax.annotate('', xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle='-|>', lw=lw, color='#111111', mutation_scale=ms, shrinkA=0, shrinkB=0), zorder=7)
 def line(xs, ys, lw=2.8):
@@ -23,8 +23,8 @@ def badge(n, y):
     ax.add_patch(Circle((X0 + 0.42, y), 0.27, fc='#CFE6F7', ec='#2F6DB5', lw=1.6, zorder=8)); T(X0 + 0.42, y, str(n), fs=13, bold=True, z=10)
 
 GAP = 0.32
-cur = 19.1
-def step(h, col, title, sub=None, n=None, tfs=13.5, sfs=12):
+cur = 19.7
+def step(h, col, title, sub=None, n=None, tfs=12.2, sfs=11.2):
     global cur
     y = cur - h
     rbox(X0, y, X1 - X0, h, col)
@@ -37,35 +37,35 @@ def step(h, col, title, sub=None, n=None, tfs=13.5, sfs=12):
     return y, h
 
 boxes = []
-boxes.append(step(1.2, PEACH, 'Process 0: read the image and build the training vectors', '4 × 4 blocks → N = 16,384 vectors of dimension d = 16', 1))
+boxes.append(step(1.2, PEACH, 'Process 0: read the image, build the training vectors', '4 × 4 blocks → N = 16,384 vectors of dimension d = 16', 1))
 boxes.append(step(0.95, PURPLE, 'MPI_Bcast: broadcast the number of training vectors N', None, 2))
-boxes.append(step(1.45, BLUE, 'Determine the workload and compute counts and displacements', 'Equal (P ≤ 6)  or  Adaptive (P > 6: throughput calibration + MPI_Allgather)', 3))
-boxes.append(step(0.95, PURPLE, 'MPI_Scatterv: distribute the training vectors to all processes', None, 4))
-boxes.append(step(1.45, BLUE, 'All processes: compute the global mean (initial codeword c₁, K = 1)', 'local sums and counts → MPI_Allreduce (sum) → c₁ = Σ S / Σ n', 5))
+boxes.append(step(1.8, BLUE, 'Determine the workload (counts and displacements)', 'Equal (P ≤ 6)  or  Adaptive (P > 6)\nAdaptive: throughput calibration + MPI_Allgather', 3))
+boxes.append(step(0.95, PURPLE, 'MPI_Scatterv: distribute the vectors to all processes', None, 4))
+boxes.append(step(1.45, BLUE, 'All processes: global mean = initial codeword c₁ (K = 1)', 'local sums and counts → MPI_Allreduce (sum) → c₁ = Σ S / Σ n', 5))
 y6, h6 = step(1.05, GREEN, 'All processes: binary splitting of the shared codebook', 'K ← 2K,   c → (1 + δ)c  and  (1 − δ)c,   δ = 0.01', 6, sfs=12)
 # loop box
 LH = 2.55; yl = cur - LH
 rbox(X0, yl, X1 - X0, LH, ('#EAF3FC', '#2F6DB5'), lw=2.0, ls='--')
 badge(7, yl + LH / 2)
-T(CX + 0.25, yl + LH - 0.35, 'LBG iteration (for the current K), executed by all processes', fs=13.0, bold=True, color='#1B3E7A')
+T(CX + 0.25, yl + LH - 0.35, 'LBG iteration (current K), all processes', fs=12.5, bold=True, color='#1B3E7A')
 rbox(1.25, yl + 0.2, 3.75, 1.6, WHITE, lw=1.8, r=0.1)
-T(3.125, yl + 1.0, 'Each process (local data):\nnearest-codeword assignment;\nlocal sums $S_k$, counts $n_k$,\nlocal distortion $D_{local}$', fs=11.0)
-rbox(5.3, yl + 0.65, 1.9, 0.8, PURPLE, lw=2.0, r=0.2); T(6.25, yl + 1.05, 'MPI_Allreduce\n(sum)', fs=11.2, bold=True)
+T(3.125, yl + 1.0, 'Each process (local data):\nnearest-codeword assignment;\nlocal sums $S_k$, counts $n_k$,\nlocal distortion $D_{local}$', fs=9.6)
+rbox(5.3, yl + 0.65, 1.9, 0.8, PURPLE, lw=2.0, r=0.2); T(6.25, yl + 1.05, 'MPI_Allreduce\n(sum)', fs=9.8, bold=True)
 rbox(7.55, yl + 0.2, 2.75, 1.6, WHITE, lw=1.8, r=0.1)
-T(8.925, yl + 1.0, 'All processes:\n$c_k = S_k / n_k$\nglobal distortion $D$', fs=11.0)
+T(8.925, yl + 1.0, 'All processes:\n$c_k = S_k / n_k$\nglobal distortion $D$', fs=9.8)
 arrow(5.01, yl + 1.05, 5.28, yl + 1.05, lw=2.2, ms=15); arrow(7.22, yl + 1.05, 7.53, yl + 1.05, lw=2.2, ms=15)
 cur = yl - GAP
 # convergence diamond
 dh1 = 2.0; dw1 = 6.4; yd1 = cur - dh1; yc1 = yd1 + dh1 / 2
 ax.add_patch(Polygon([(CX, yd1 + dh1), (CX + dw1/2, yc1), (CX, yd1), (CX - dw1/2, yc1)], closed=True, fc='#FFE08A', ec='#C99A1E', lw=2.0, zorder=2))
-T(CX, yc1 + 0.32, 'Converged?', fs=14, bold=True); T(CX, yc1 - 0.08, r'$\Delta D = |D_{prev} - D| / D \leq \varepsilon$  or  iter $\geq$ 100', fs=11.3)
-T(CX, yc1 - 0.45, '(for each codebook size)', fs=10.5)
+T(CX, yc1 + 0.32, 'Converged?', fs=14, bold=True); T(CX, yc1 - 0.08, r'$\Delta D = |D_{prev} - D| / D \leq \varepsilon$  or  iter $\geq$ 100', fs=10.2)
+T(CX, yc1 - 0.45, '(for each codebook size)', fs=10)
 cur = yd1 - GAP
 dh2 = 1.3; dw2 = 3.6; yd2 = cur - dh2; yc2 = yd2 + dh2 / 2
 ax.add_patch(Polygon([(CX, yd2 + dh2), (CX + dw2/2, yc2), (CX, yd2), (CX - dw2/2, yc2)], closed=True, fc='#FFF1C7', ec='#C99A1E', lw=2.0, zorder=2))
 T(CX, yc2, 'K < 64 ?', fs=14, bold=True)
 cur = yd2 - GAP
-yg, hg = step(0.95, PURPLE, 'MPI_Gatherv: collect the indices on Process 0 (block order)', None, 8)
+yg, hg = step(0.95, PURPLE, 'MPI_Gatherv: collect the indices on Process 0', None, 8)
 yp, hp = step(1.2, PEACH, 'Process 0: delta coding → canonical Huffman coding', 'produces the compressed container', 9)
 
 # arrows between boxes (vertical)
