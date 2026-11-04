@@ -39,7 +39,7 @@ def step(h, col, title, sub=None, n=None, tfs=13.5, sfs=12):
 boxes = []
 boxes.append(step(1.2, PEACH, 'Process 0: read the image and build the training vectors', '4 × 4 blocks → N = 16,384 vectors of dimension d = 16', 1))
 boxes.append(step(0.95, PURPLE, 'MPI_Bcast: broadcast the number of training vectors N', None, 2))
-boxes.append(step(1.45, BLUE, 'Determine the workload and compute counts and displacements', 'Equal (P ≤ 6)  or  Adaptive (P > 6: speed calibration + MPI_Allgather)', 3))
+boxes.append(step(1.45, BLUE, 'Determine the workload and compute counts and displacements', 'Equal (P ≤ 6)  or  Adaptive (P > 6: throughput calibration + MPI_Allgather)', 3))
 boxes.append(step(0.95, PURPLE, 'MPI_Scatterv: distribute the training vectors to all processes', None, 4))
 boxes.append(step(1.45, BLUE, 'All processes: compute the global mean (initial codeword c₁, K = 1)', 'local sums and counts → MPI_Allreduce (sum) → c₁ = Σ S / Σ n', 5))
 y6, h6 = step(1.05, GREEN, 'All processes: binary splitting of the shared codebook', 'K ← 2K,   c → (1 + δ)c  and  (1 − δ)c,   δ = 0.01', 6, sfs=12)
