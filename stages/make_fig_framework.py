@@ -14,7 +14,7 @@ BLUE = ('#D6E8FA', '#3F83CC'); WHITE = ('#FFFFFF', '#8FB0D4'); PURPLE = ('#E6DCF
 def rbox(x, y, w, h, fc, ec, lw=2.8, r=0.16, ls='-', z=1):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle=f'round,pad=0.01,rounding_size={r}', fc=fc, ec=ec, lw=lw, ls=ls, zorder=z))
 def T(x, y, s, fs=14, color='#000000', ha='center', style='normal', z=6):
-    ax.text(x, y, s, fontsize=fs, fontweight='bold', color=color, ha=ha, va='center', zorder=z, linespacing=1.25, fontstyle=style)
+    ax.text(x, y, s, fontsize=fs*1.1, fontweight='bold', color=color, ha=ha, va='center', zorder=z, linespacing=1.25, fontstyle=style)
 def arrow(x1, y1, x2, y2, lw=3.0, ms=22):
     ax.annotate('', xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle='-|>', lw=lw, color='#111111', mutation_scale=ms, shrinkA=0, shrinkB=0), zorder=7)
 def line(xs, ys, lw=3.0): ax.plot(xs, ys, lw=lw, color='#111111', solid_capstyle='butt', zorder=7)
@@ -76,7 +76,7 @@ for i, s in enumerate(items):
     rbox(S2B[0] + 0.45, yy - 0.26, S2B[1] - 0.9, 0.52, WHITE[0], WHITE[1], lw=1.6, r=0.08); T(cx, yy, s, fs=12.6)
 arrow(cx, 7.25, cx, 7.0)
 rbox(S2B[0] + 0.2, 6.4, S2B[1] - 0.4, 0.6, PURPLE[0], PURPLE[1], lw=2.6, r=0.1)
-T(cx, 6.7, 'C on all processes;  L gathered on Process 0 (MPI_Gatherv)', fs=10.6)
+T(cx, 6.7, 'C on all processes; L on Process 0 (MPI_Gatherv)', fs=10.6)
 # ---------------- bottom row ----------------
 B_TOP, B_H, BH = 5.3, 4.3, 1.1
 S3 = (0.3, 7.1); S4 = (8.0, 7.1)
@@ -110,5 +110,8 @@ arrow(S3[0] + S3[1] + 0.01, B_TOP - B_H/2 - 0.2, S4[0] - 0.01, B_TOP - B_H/2 - 0
 # legend
 rbox(3.6, 0.2, 0.9, 0.42, C['s2b'], C['s2b'], lw=1, r=0.1); T(4.65, 0.41, 'Parallel: all MPI processes work together', fs=12.5, ha='left')
 rbox(9.9, 0.2, 0.9, 0.42, C['s2a'], C['s2a'], lw=1, r=0.1); T(10.95, 0.41, 'Sequential: a single process', fs=12.5, ha='left')
-fig.savefig('stages/figures/Figure_framework_sequential_vs_parallel.png', dpi=190, facecolor='white')
+fig.savefig('stages/figures/Figure_framework_sequential_vs_parallel.png', dpi=300, facecolor='white')
+matplotlib.rcParams['svg.fonttype'] = 'path'
+fig.savefig('stages/figures/Figure_framework_sequential_vs_parallel.svg')
+fig.savefig('stages/figures/Figure_framework_sequential_vs_parallel.pdf')
 print('saved')
