@@ -59,7 +59,9 @@ exec(body)
 
 # ---------------- D ----------------
 H('D. 4.8 Memory Usage', 2)
-P('Memory consumption was measured as the peak resident set size (RSS) of each process using /usr/bin/time. The '
+P('Memory consumption was measured as the peak resident set size (RSS) of each process using /usr/bin/time over the entire '
+  'execution of each program, which includes codebook training, delta coding, Huffman encoding, decoding of the container, and the '
+  'computation of the quality metrics. The '
   'measurements used the final program versions, together with the same process-binding and workload-distribution '
   'configurations as in the timing experiments. Each configuration was executed three times for each of the four '
   'grayscale and the four color images, giving 12 runs per image group. Measurements were performed for the sequential '
@@ -88,6 +90,23 @@ P('The sum of the per-process peak RSS values increased approximately linearly w
   'than once. Within the evaluated configurations, the summed peak RSS remained below 300 MB, indicating that memory '
   'consumption was not a practical limitation on the tested system.', align='j')
 
+CAP('Table 4.x: Time-memory trade-off: speedup of the parallel program and the memory cost relative to the sequential program.')
+TABLE([
+ ['Image type', 'P', 'LBG speedup', 'Total speedup', 'Sum of peak RSS (MB)', 'Memory / sequential'],
+ ['Grayscale', '4', '3.80', '3.76', '81.7 to 83.1', 'about 24'],
+ ['Grayscale', '14', '9.17', '8.54', '289.2 to 290.2', 'about 84'],
+ ['Color', '4', '3.80', '3.76', '82.8 to 83.7', 'about 15'],
+ ['Color', '14', '9.19', '8.83', '289.7 to 291.4', 'about 53'],
+], [2.6, 1.4, 2.6, 2.6, 4.0, 3.0])
+P('Note: the sequential program required 3.4 to 3.5 MB (grayscale) and 5.4 to 5.6 MB (color); the ratio is approximate.', italic=True, size=10)
+P('Table 4.x relates the speedup to the memory cost. At P = 14, the Total processing time of the grayscale images decreased by a '
+  'factor of 8.54, while the sum of the peak memory of all processes was about 84 times that of the sequential program. Memory '
+  'therefore grows faster than the speedup. However, the memory of one process remained about 21 to 23 MB almost independently of P, '
+  'which is much larger than the image data itself (0.25 to 0.75 MB) and is consistent with a fixed memory component of each MPI '
+  'process rather than with a replication of the data. In absolute terms, the largest sum was below 300 MB. Hence, for the tested '
+  'image sizes, the speedup was obtained at an acceptable memory cost, but this trade-off should be re-evaluated for much larger '
+  'images or many more processes.', align='j')
+
 # ---------------- E ----------------
 H('E. Insertions for Section 4.10 (Chapter Summary)', 2)
 P('1) Compression paragraph (replace the second paragraph; adds the mean values):', italic=True)
@@ -102,11 +121,12 @@ P('2) Sentence to add to the performance paragraph:', italic=True)
 P('Delta coding, Huffman encoding, and container decoding, which are executed by Process 0 only, together accounted for '
   'about 2.1% of the Total processing time at P = 14, and a preliminary experiment showed that parallelizing them saved '
   'less than 0.3% of it; they were therefore kept sequential.', align='j')
-P('3) Memory paragraph (replace the old one):', italic=True)
+P('3) Memory paragraph (replace the old one; the last sentence is new):', italic=True)
 P('Regarding memory usage, the peak resident set size of the sequential program was 3.4–3.5 MB for the grayscale images '
   'and 5.4–5.6 MB for the color images. Each MPI process required approximately 21–23 MB, and this value remained nearly '
   'constant between P = 4 and P = 14, whereas the sum of the per-process peak values increased approximately linearly '
-  'with the number of processes, reaching about 290 MB at P = 14.', align='j')
+  'with the number of processes, reaching about 290 MB at P = 14. The speedup of 8.5 at P = 14 was obtained with a total memory of '
+  'about 290 MB, which remained far below the capacity of the machine.', align='j')
 
 H('Checks before pasting', 2)
 for t in ['Mean PSNR 29.48 dB (grayscale): make sure the Mean row of the quality table shows the same value.',
