@@ -47,22 +47,23 @@ P('After the codebook has been trained, three stages remain: delta coding of the
   'Process 0 only. Their execution time was measured separately with instrumented copies of the sequential and the '
   'parallel programs, which produce exactly the same compressed file as the final programs (identical MD5 checksum), '
   'using the same measurement protocol as the timing experiments (median of five runs). Table 4.x reports the mean '
-  'over the images of each type, and the shares are computed relative to the Total processing time of the main '
-  'measurement session.', align='j')
-CAP('Table 4.x: Execution time of the post-training stages (ms) and their share of the Total processing time.')
+  'over the images of each type: the LBG time and the Total processing time come from the main measurement session '
+  '(in seconds), and the times of the three post-training stages come from the instrumented programs (in milliseconds).', align='j')
+CAP('Table 4.x: Execution time of each stage and its share of the Total processing time (LBG and Total in seconds; the other stages in milliseconds).')
 TABLE([
- ['Image type', 'P', 'Delta coding', 'Huffman encoding', 'Container decoding', 'Sum of the three', 'Share of Total (%)'],
- ['Grayscale', '1 (sequential)', '0.006', '0.181', '0.340', '0.527', '0.21'],
- ['Grayscale', '4', '0.007', '0.206', '0.387', '0.600', '0.89'],
- ['Grayscale', '8', '0.008', '0.214', '0.397', '0.619', '1.46'],
- ['Grayscale', '14', '0.009', '0.216', '0.391', '0.615', '2.07'],
- ['Color', '1 (sequential)', '0.017', '0.548', '0.939', '1.503', '0.19'],
- ['Color', '4', '0.015', '0.642', '1.160', '1.817', '0.88'],
- ['Color', '8', '0.020', '0.663', '1.201', '1.884', '1.48'],
- ['Color', '14', '0.019', '0.671', '1.172', '1.862', '2.12'],
-], [2.2, 2.6, 2.1, 2.4, 2.5, 2.3, 2.4])
+ ['Image type', 'P', 'LBG (s)', 'Delta (ms)', 'Huffman (ms)', 'Decoding (ms)', 'Total (s)', 'LBG share (%)', 'Delta + Huffman + decoding (%)'],
+ ['Grayscale', '1 (sequential)', '0.2531', '0.006', '0.181', '0.340', '0.2541', '99.63', '0.21'],
+ ['Grayscale', '4', '0.0666', '0.007', '0.206', '0.387', '0.0675', '98.59', '0.89'],
+ ['Grayscale', '8', '0.0404', '0.008', '0.214', '0.397', '0.0425', '95.03', '1.46'],
+ ['Grayscale', '14', '0.0276', '0.009', '0.216', '0.391', '0.0298', '92.75', '2.07'],
+ ['Color', '1 (sequential)', '0.7724', '0.017', '0.548', '0.939', '0.7750', '99.66', '0.19'],
+ ['Color', '4', '0.2034', '0.015', '0.642', '1.160', '0.2060', '98.75', '0.88'],
+ ['Color', '8', '0.1236', '0.020', '0.663', '1.201', '0.1273', '97.07', '1.48'],
+ ['Color', '14', '0.0840', '0.019', '0.671', '1.172', '0.0878', '95.73', '2.12'],
+], [1.9, 2.4, 1.6, 1.6, 1.8, 1.8, 1.6, 1.7, 2.6], size=9)
 P('Note: the values may not add up exactly because of rounding. For the color images the stages are summed over the '
-  'three channels, and the Huffman time includes the conversion of the codebook to 8 bits.', italic=True, size=10)
+  'three channels, and the Huffman time includes the conversion of the codebook to 8 bits. The remaining part of the '
+  'Total processing time (for example, building the training vectors) is not listed separately.', italic=True, size=10)
 P('Delta coding was the cheapest stage (0.006–0.009 ms for the grayscale images and 0.015–0.020 ms for the color '
   'images), followed by Huffman encoding (about 0.18–0.22 ms and 0.55–0.67 ms, respectively). Container decoding was '
   'the longest of the three (about 0.34–0.40 ms and 0.94–1.20 ms). Because these stages are not parallelized, their '
@@ -71,7 +72,7 @@ P('Delta coding was the cheapest stage (0.006–0.009 ms for the grayscale image
 P('This growth contributes to the gap between the Total processing speedup and the LBG speedup, but it does not explain '
   'it alone. At P = 14, the Total processing time of the grayscale images exceeded the LBG time by about 2.2 ms, of '
   'which the three stages account for about 0.6 ms. The remainder belongs to the other stages included in the Total '
-  'processing time, such as building the training vectors, work distribution, speed calibration, and the gathering of '
+  'processing time, such as building the training vectors, work distribution, computation-rate calibration, and the gathering of '
   'results.', align='j')
 
 # ------------------------------------------------------------------ 4.5.6
@@ -105,6 +106,17 @@ TABLE([
 P('Note: earlier program version, four grayscale images. The communication time includes the waiting time at '
   'synchronization points. The values may not add up exactly because of rounding. The absolute times are not '
   'comparable with those of the final program.', italic=True, size=10)
+P('Table 4.z compares the sequential execution (P = 1) of this program with the parallel executions: it gives the speedup of '
+  'each parallelized stage, that is, the time at P = 1 divided by the time at P. A value below 1 means that the parallel '
+  'version was slower than the sequential one.', align='j')
+CAP('Table 4.z: Speedup of the parallelized stages relative to the sequential execution (P = 1) of the same program.')
+TABLE([
+ ['Stage', 'P = 2', 'P = 4', 'P = 8', 'P = 14'],
+ ['Delta encoding', '0.89', '0.65', '0.40', '0.23'],
+ ['Huffman encoding', '1.20', '1.26', '1.23', '1.17'],
+ ['Delta decoding', '1.10', '0.58', '0.55', '0.37'],
+], [4.5, 2.4, 2.4, 2.4, 2.4])
+P('Note: computed from the times of Table 4.y (earlier program version, grayscale images); the values are rounded.', italic=True, size=10)
 P('The local computation scaled with the number of processes: the computation time of Huffman encoding decreased from '
   '0.189 ms at P = 1 to 0.032 ms at P = 14. However, the communication and synchronization time increased with P '
   '(from 0.002 to 0.104 ms for Huffman encoding), and the sequential verification on Process 0 (about 0.19 ms) did not '
