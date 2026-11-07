@@ -1,0 +1,100 @@
+{
+ "title": "",
+ "stages": [
+  {
+   "name": "Stage 1",
+   "sub": "Block\nFormation",
+   "color": "2F6FB5",
+   "light": "E3EEFA",
+   "steps": [
+    [
+     "Input image",
+     "512×512,\ngray / color"
+    ],
+    [
+     "4×4 blocks",
+     "non-overlapping"
+    ],
+    [
+     "Training vectors",
+     "16-D, N = 16,384\nper channel"
+    ]
+   ],
+   "tag": "seq"
+  },
+  {
+   "name": "Stage 2",
+   "sub": "Parallel LBG\nTraining (MPI)",
+   "color": "E07B22",
+   "light": "FDEBD9",
+   "hl": true,
+   "steps": [
+    [
+     "Distribute",
+     "MPI_Scatterv:\nEqual / Adaptive"
+    ],
+    [
+     "Assign",
+     "nearest codeword\non each process"
+    ],
+    [
+     "Combine",
+     "Allreduce: sums,\ncounts, distortion"
+    ],
+    [
+     "Refine and split",
+     "per level,\nuntil K = 64"
+    ]
+   ],
+   "tag": "par"
+  },
+  {
+   "name": "Stage 3",
+   "sub": "Lossless Index\nCoding",
+   "color": "2A9D8F",
+   "light": "DDF3F0",
+   "steps": [
+    [
+     "Delta coding",
+     "differences of\nVQ indices"
+    ],
+    [
+     "Huffman coding",
+     "variable-length\ncodes"
+    ],
+    [
+     "Compressed size",
+     "codebook + Huffman table\n+ coded indices"
+    ]
+   ],
+   "tag": "seq"
+  },
+  {
+   "name": "Stage 4",
+   "sub": "Decoding and\nEvaluation",
+   "color": "6B4FA3",
+   "light": "ECE6F6",
+   "steps": [
+    [
+     "Huffman decoding",
+     "bit stream to\ndelta values"
+    ],
+    [
+     "Inverse delta",
+     "recover\nVQ indices"
+    ],
+    [
+     "Reconstruction",
+     "codebook\nlookup"
+    ]
+   ],
+   "tag": "seq"
+  }
+ ],
+ "footer": "",
+ "between": [
+  "16,384 training vectors per channel (16-D)",
+  "codebook C + index array L (gathered on Process 0)",
+  "accounted size: codebook + Huffman table + coded indices"
+ ]
+}

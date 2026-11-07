@@ -1,0 +1,13 @@
+image,method,setting,CR,PSNR_dB,SSIM
+gray,Proposed,4x4 K=64,23.50,29.67,0.8190
+gray,JPEG,quality=21,23.37,33.14,0.8767
+gray,JPEG 2000,target CR=23.50,23.53,35.48,0.9059
+boat_img,Proposed,4x4 K=64,26.54,29.11,0.8394
+boat_img,JPEG,quality=17,26.41,31.37,0.8705
+boat_img,JPEG 2000,target CR=26.54,26.53,33.64,0.9051
+cameraman_img,Proposed,4x4 K=64,28.88,29.75,0.8855
+cameraman_img,JPEG,quality=17,29.23,34.01,0.9173
+cameraman_img,JPEG 2000,target CR=28.88,28.85,37.17,0.9446
+peppers_img,Proposed,4x4 K=64,24.75,29.41,0.7624
+peppers_img,JPEG,quality=21,24.92,32.24,0.8103
+peppers_img,JPEG 2000,target CR=24.75,24.83,33.42,0.8310
