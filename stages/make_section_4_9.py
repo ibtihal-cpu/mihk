@@ -65,19 +65,19 @@ table([
 ])
 para('Note: the speedup of the reference fractal compressor is the ratio of encoding plus decoding time with one thread to that with 14 threads (medians of five runs), over the four grayscale images.', italic=True, size=10)
 
-para('Table 4.22. Comparison with the reference fractal compressor on the same images and machine.', bold=True)
+para('Table 4.22. Execution time and parallel speedup of the reference fractal compressor and the proposed framework on the same images and machine (compression ratio and PSNR are given in Table 4.20).', bold=True)
 table([
- ['Image','Method','CR','PSNR (dB)','Time, 1 unit (s)','Time, 14 units (s)','Speedup (14 units)'],
- ['Lena','Reference fractal compressor','34.36','27.48','0.0134','0.0039','3.44×'],
- ['','This work (LBG-VQ)','23.99','29.67','0.2652','0.0309','8.58×'],
- ['Boat','Reference fractal compressor','28.29','27.01','0.0171','0.0043','3.98×'],
- ['','This work (LBG-VQ)','27.18','29.11','0.2329','0.0274','8.50×'],
- ['Cameraman','Reference fractal compressor','30.61','28.72','0.0156','0.0041','3.80×'],
- ['','This work (LBG-VQ)','29.60','29.75','0.2372','0.0280','8.47×'],
- ['Peppers','Reference fractal compressor','39.71','27.77','0.0130','0.0037','3.51×'],
- ['','This work (LBG-VQ)','25.30','29.41','0.2809','0.0327','8.59×'],
- ['Mean of four images','Reference fractal compressor','33.24','27.75','0.0148','0.0040','3.68×'],
- ['','This work (LBG-VQ)','26.52','29.49','0.2541','0.0298','8.54×'],
+ ['Image','Method','Time, 1 unit (s)','Time, 14 units (s)','Speedup (14 units)'],
+ ['Lena','Reference fractal compressor','0.0134','0.0039','3.44×'],
+ ['','This work (LBG-VQ)','0.2652','0.0309','8.58×'],
+ ['Boat','Reference fractal compressor','0.0171','0.0043','3.98×'],
+ ['','This work (LBG-VQ)','0.2329','0.0274','8.50×'],
+ ['Cameraman','Reference fractal compressor','0.0156','0.0041','3.80×'],
+ ['','This work (LBG-VQ)','0.2372','0.0280','8.47×'],
+ ['Peppers','Reference fractal compressor','0.0130','0.0037','3.51×'],
+ ['','This work (LBG-VQ)','0.2809','0.0327','8.59×'],
+ ['Mean of four images','Reference fractal compressor','0.0148','0.0040','3.68×'],
+ ['','This work (LBG-VQ)','0.2541','0.0298','8.54×'],
 ], bold_rows=(9, 10))
 para('Note: the time of the reference fractal compressor is encoding plus decoding with OpenMP threads; the time of this work is the Total processing time (Section 4.4) with MPI processes. A "unit" is an OpenMP thread or an MPI process (14 units = 6 P-cores + 8 E-cores). Times are medians of five runs. The mean speedup is the mean of the four individual speedups, not the ratio of the mean times (for example, 0.2541 / 0.0298 = 8.53 compared with 8.54). The two time definitions differ (the fractal time covers encoding and decoding only; the Total processing time of this work covers the stages listed in Section 4.4), so the times are compared descriptively.', italic=True, size=10)
 
