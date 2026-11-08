@@ -57,12 +57,19 @@ para('Table 4.21 compares the parallel speedup reported for image compression in
 para('Table 4.21. Parallel speedup reported for image compression and in this work.', bold=True)
 table([
  ['Study','Compression method','Platform','Baseline','Speedup'],
- ['Hernandez-Lopez and Muñiz-Pérez (2022)','Fractal, quadtree partition','Multi-core CPU (task parallelism)','Serial implementation','≈15×'],
- ['','','GPU (CUDA dynamic parallelism)','Serial implementation','≈25×'],
+ ['Chitra et al. (1997)*','Fractal, quadtree, master-slave','Multi-core system','Serial','1.80× (512 × 512)'],
+ ['Cao and Gu (2010)*','Fractal, Jacquin scheme','OpenMP, 4 cores (2.33 GHz)','Serial','≈6× (512 × 512)'],
+ ['Khan and Akhtar (2013)*','Fractal','CUDA GPU','Serial','10.75× (512 × 512)'],
+ ['Chauhan et al. (2014)*','Fractal, quadtree','Cluster of 24 GPUs','Serial','≈14×'],
+ ['Al Sideiri et al. (2020)*','Fractal with Fisher classification','CUDA GPU','Serial','4.9× (1024 × 1024)'],
+ ['Hernandez-Lopez and Muñiz-Pérez (2022)','Fractal, quadtree, classification','OpenMP tasks, 8 threads (laptop)','Serial implementation','5.3× to 6.1× (256 × 256)'],
+ ['','','OpenMP tasks, 24 threads (server)','Serial implementation','13.5× to 14.9× (512 × 512 and 1024 × 1024, tol = 5)'],
+ ['','','CUDA dynamic parallelism (server)','Serial implementation','17.3× to 24.5× (tol = 5)'],
  ['Zangana (2025)','Bitplane, wavelet, predictive coding','Up to 16 GPUs','1 GPU','9.09×'],
  ['Reference fractal compressor (this work)','Fractal, quadtree, classification','14 OpenMP threads (6 P-cores + 8 E-cores)','Sequential run','3.4× to 4.0× (mean 3.68×)'],
  ['This work','LBG-VQ, delta, canonical Huffman','14 MPI processes (6 P-cores + 8 E-cores)','Sequential program','9.18× (LBG); 8.54× (Total, gray); 8.83× (Total, color)'],
 ])
+para('* Values as reported in Hernandez-Lopez and Muñiz-Pérez [ref] for earlier studies; the original publications have not been consulted. For Hernandez-Lopez and Muñiz-Pérez, the speedup depends on the image size and on the tolerance (7.1× to 9.5× with 24 threads at tol = 20).', italic=True, size=10)
 para('Note: the speedup of the reference fractal compressor is the ratio of encoding plus decoding time with one thread to that with 14 threads (medians of five runs), over the four grayscale images.', italic=True, size=10)
 
 para('Table 4.22. Execution time and parallel speedup of the reference fractal compressor and the proposed framework on the same images and machine (compression ratio and PSNR are given in Table 4.20).', bold=True)
@@ -84,7 +91,7 @@ para('Note: the time of the reference fractal compressor is encoding plus decodi
 para('Discussion', bold=True)
 para('Table 4.20 compares the compression ratio and reconstruction quality of the proposed LBG-VQ framework with the reference fractal compressor and previous studies. For Boat and Cameraman, the proposed framework achieved higher PSNR values at similar compression ratios. Specifically, Boat achieved 29.11 dB at a CR of 27.18, compared with 27.01 dB at a CR of 28.29 for the reference fractal compressor. Similarly, Cameraman achieved 29.75 dB at a CR of 29.60, compared with 28.72 dB at a CR of 30.61. For Lena and Peppers, the reference fractal compressor achieved higher compression ratios, while the proposed framework provided higher PSNR values. Compared with the published studies, Li and U (2026), Thomas et al. (2025), and Ranjan and Kumar (2023) reported higher PSNR values at lower compression ratios.', justify=True)
 para('Table 4.22 compares the execution time and parallel speedup of the proposed framework and the reference fractal compressor on the same images and hardware. At 14 processing units, the proposed framework achieved a mean Total processing speedup of 8.54×, compared with 3.68× for the reference fractal compressor. However, the reference fractal compressor required less execution time, averaging 0.0040 s compared with 0.0298 s for the proposed framework. These results show that the proposed framework achieved a greater relative reduction in execution time, while the reference fractal compressor remained faster in absolute terms.', justify=True)
-para('Table 4.21 places these results alongside the parallel speedups reported in previous image compression studies. Hernandez-Lopez and Muñiz-Pérez (2022) reported approximately 15× on a multicore CPU and 25× on a GPU, while Zangana (2025) reported 9.09× using 16 GPUs. The proposed framework achieved 9.18× for LBG and Total processing speedups of 8.54× and 8.83× for grayscale and color images, respectively. These comparisons provide performance context, although differences in algorithms, hardware, baselines, and measured stages prevent a direct ranking. The contribution of the Adaptive distribution is more directly demonstrated by the controlled experiments in Sections 4.5 and 4.6, where it increased the LBG speedup from 7.56× with Equal distribution to 9.18× at 14 processes.', justify=True)
+para('Table 4.21 places these results alongside the parallel speedups reported in previous image compression studies. Hernandez-Lopez and Muñiz-Pérez (2022) reported speedups of up to 14.9× with 24 CPU threads and up to 24.5× on a GPU for the largest images and the smallest tolerance, but only 5.3× to 6.1× with 8 threads for 256 × 256 images, and Zangana (2025) reported 9.09× using 16 GPUs. The proposed framework achieved 9.18× for LBG and Total processing speedups of 8.54× and 8.83× for grayscale and color images, respectively. These comparisons provide performance context, although differences in algorithms, hardware, baselines, and measured stages prevent a direct ranking. The contribution of the Adaptive distribution is more directly demonstrated by the controlled experiments in Sections 4.5 and 4.6, where it increased the LBG speedup from 7.56× with Equal distribution to 9.18× at 14 processes.', justify=True)
 
 doc.add_page_break()
 para('Checks before inserting (not part of the thesis text)', bold=True)

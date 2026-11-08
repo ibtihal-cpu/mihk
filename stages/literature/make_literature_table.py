@@ -70,14 +70,29 @@ rows = [
   "Speedup 89.75× to 107.88× vs a slow Python baseline (about 120 s)",
   "Algorithm shown in this work's reference implementation (classification); baseline not comparable",
   "Not used in tables (image size and baseline differ)"],
- ["Hernandez-Lopez and Muñiz-Pérez (2022)", "J. Real-Time Image Process. 19:391–402, doi 10.1007/s11554-021-01193-w",
-  "Parallel fractal compression, quadtree",
-  "Task parallelism on multi-core CPU; CUDA dynamic parallelism on GPU",
-  "Not stated in the abstract",
-  "Standard images (names and sizes not stated in the abstract)",
-  "About 15× (CPU) and 25× (GPU) vs serial (abstract only; full text not read)",
-  "Parallel image compression speedup",
-  "Chapter 4 Table 4.22 (abstract values)"],
+ ["Hernandez-Lopez and Muñiz-Pérez (2022)", "J. Real-Time Image Process. 19:391–402, doi 10.1007/s11554-021-01193-w (full text read)",
+  "Parallel fractal compression, quadtree, classification",
+  "OpenMP tasks on CPU; CUDA dynamic parallelism on GPU. Laptop: i7-4720HQ (8 threads), GTX 980M. Server: i9-9920X (24 threads), TITAN RTX; 20 runs, mean",
+  "Dynamic: tasks created by the quadtree recursion",
+  "Peppers, Boat, Cameraman, Baboon at 256 x 256 (laptop); Boat, Baboon at 512 x 512 and Male, Airport at 1024 x 1024 (server); D3 domain library",
+  "Laptop 256 x 256: 2.25x (2 threads) to 6.06x (8 threads); GPU slower than serial. Server, tol = 5: 24 threads 13.5x-14.9x, GPU 17.3x-24.5x; tol = 20: 7.1x-9.5x (24 threads), 5.0x-10.4x (GPU)",
+  "Shows that speedup depends on image size and tolerance; same family of images (names), different sizes and algorithm",
+  "Chapter 4 Table 4.22 (corrected values); Related Work"],
+ ["Chitra et al. (1997)", "IFAC Proc. Vol. 30(25):307-312 (cited in Hernandez-Lopez)",
+  "Parallel fractal coding, quadtree, master-slave", "Multi-core system (as reported)", "Four partitions of the image assigned to slave processors",
+  "512 x 512 (as reported)", "1.80x (as reported)", "Early parallel quadtree fractal coding", "Related Work (second-hand; verify the original)"],
+ ["Cao and Gu (2010)", "ICEEE 2010 (cited in Hernandez-Lopez)",
+  "OpenMP parallel Jacquin fractal encoding", "OpenMP; four physical cores at 2.33 GHz (as reported)", "Loop over horizontal partitions",
+  "512 x 512 (as reported)", "Almost 6x (as reported)", "OpenMP fractal encoding", "Related Work (second-hand; verify the original)"],
+ ["Khan and Akhtar (2013)", "ITTC 2013 (cited in Hernandez-Lopez)",
+  "Fractal compression on CUDA", "CUDA GPU", "Range and domain blocks mapped to thread blocks",
+  "512 x 512 (as reported)", "10.75x (as reported)", "GPU fractal compression", "Related Work (second-hand; verify the original)"],
+ ["Chauhan et al. (2014)", "SocProS 2012, Springer (cited in Hernandez-Lopez)",
+  "Fractal compression on a pipelined GPU cluster", "Cluster of 24 GPUs, master and slaves", "Dynamic allocation in a circulating pipeline",
+  "Not stated in the citing paper", "Almost 14x (as reported)", "GPU cluster", "Related Work (second-hand; verify the original)"],
+ ["Al Sideiri et al. (2020)", "J. Real-Time Image Process. 17(5):1375-1387 (cited in Hernandez-Lopez)",
+  "CUDA fractal compression with Fisher classification", "CUDA GPU", "Quadtree linearized, kernels launched per level",
+  "1024 x 1024 (as reported)", "4.9x (as reported)", "GPU fractal compression with classification", "Related Work (second-hand; verify the original)"],
  ["SairaBanu et al. (2015)", "Indian J. Sci. Technol. 8(13)",
   "Parallel SVD image compression, OpenMP",
   "OpenMP; dual-core Intel processor",
@@ -111,7 +126,7 @@ for row in rows:
     for j, v in enumerate(row):
         cells[j].text = ''; cells[j].paragraphs[0].add_run(v).font.size = Pt(7.5)
 doc.add_paragraph()
-doc.add_paragraph('Notes: values are those stated in the papers. Hernandez-Lopez and Muñiz-Pérez was read in abstract only. Wakatani (2005), Bystrov et al. (2023), Severo et al. (2024), Zhu (2012), Thomas et al. (2025), Ranjan and Kumar (2023) and Ungureanu et al. (2024) have not been read in full in this work.')
+doc.add_paragraph('Notes: values are those stated in the papers. Wakatani (2005), Bystrov et al. (2023), Severo et al. (2024), Zhu (2012), Thomas et al. (2025), Ranjan and Kumar (2023) and Ungureanu et al. (2024) have not been read in full in this work.')
 doc.save('Literature_Summary.docx')
 
 with open('Literature_Summary.md', 'w') as f:
