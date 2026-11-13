@@ -1,0 +1,5 @@
+image,H_index_bits,H_delta_bits,huffman_data_bytes,huffman_bits_per_index,system_CR
+gray,5.393,4.665,9648,4.711,23.50
+boat_img,5.237,4.061,8359,4.082,26.54
+cameraman_img,5.165,3.682,7584,3.703,28.88
+peppers_img,5.396,4.365,9078,4.433,24.75

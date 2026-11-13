@@ -376,7 +376,10 @@ static double calibrate_speed(void)
     return (double)REP * (double)NV * (double)NC / dt;
 }
 
-void parallel_lbg(const float *local_vf, int local_n, int num_vectors,
+/* Returns the TOTAL number of Lloyd iterations summed over all split stages
+   (identical on every rank, since the stopping test uses the Allreduce'd
+   distortion). Mirrors the return value of sequential lbg() in sem1.c. */
+int parallel_lbg(const float *local_vf, int local_n, int num_vectors,
                    int vlen, int K, float *codebook, uint8_t *local_labels,
                    int rank, int size, int verbose)
 {
@@ -399,6 +402,7 @@ void parallel_lbg(const float *local_vf, int local_n, int num_vectors,
     float *buf = (float *)calloc(buf_capacity, sizeof(float));
 
     int k = 1;
+    int total_iters = 0;
     while (k < K) {
         for (int i = k - 1; i >= 0; i--)
             for (int j = 0; j < VLEN; j++) {
@@ -459,11 +463,13 @@ void parallel_lbg(const float *local_vf, int local_n, int num_vectors,
                 printf("k=%3d iter=%3d distortion=%.4f  (first)\n", k, iter, prev_dist);
 
         } while (iter < MAX_ITER && improvement > EPSILON);
+        total_iters += iter;
 
         if (rank == 0 && verbose)
             printf("k=%3d iter=%3d distortion=%.4f  (converged)\n", k, iter, prev_dist);
     }
     free(buf);
+    return total_iters;
 }
 
 /* flat float* codebook everywhere (see judgment call #2) */
@@ -940,7 +946,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
 
     MPI_Barrier(MPI_COMM_WORLD);
     double t0 = MPI_Wtime();
-    parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
+    int lbg_iters = parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
                  codebook_flat, local_labels, rank, size, 0);
     MPI_Barrier(MPI_COMM_WORLD);
     double t1 = MPI_Wtime();
@@ -964,6 +970,7 @@ static int run_gray_parallel(int argc, char *argv[], int rank, int size, const c
 
         printf("==================================\n");
         printf("Time (LBG only): %.4f seconds\n", time_lbg);
+        printf("LBG total iterations: %d\n", lbg_iters);
 
         double H = compute_entropy(labels, num_vectors, K);
         printf("Entropy before Huffman = %.3f bits/symbol\n", H);
@@ -1202,7 +1209,7 @@ static int run_color_parallel(int argc, char *argv[], int rank, int size, const 
 
         MPI_Barrier(MPI_COMM_WORLD);
         double t0 = MPI_Wtime();
-        parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
+        int lbg_iters = parallel_lbg(local_vf, local_n, num_vectors, vlen, K,
                     codebook_flat, local_labels, rank, size, 0);
         MPI_Barrier(MPI_COMM_WORLD);
         double t1 = MPI_Wtime();
@@ -1213,7 +1220,7 @@ static int run_color_parallel(int argc, char *argv[], int rank, int size, const 
                     0, MPI_COMM_WORLD);
 
         if (rank == 0) {
-            printf("\n  [%s channel] LBG time=%.4fs\n", channel_names[ch], lbg_time);
+            printf("\n  [%s channel] LBG time=%.4fs  LBG iters=%d\n", channel_names[ch], lbg_time, lbg_iters);
 
             uint8_t *labels_delta_u = (uint8_t*)malloc(num_vectors);
             labels_delta_u[0] = labels[0];
