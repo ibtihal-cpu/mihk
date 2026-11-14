@@ -1053,6 +1053,16 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
     res.proc_time += wtime() - tp_a;
     double t_lbg0 = wtime();
     res.lbg_iters = lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
+    /* TEST ONLY: final nearest-codeword assignment with the final codebook (not part of the thesis program) */
+    for (int i = 0; i < num_vectors; i++) {
+        float min_dist = 1e30f; int min_index = 0;
+        const float *v = &training_f[i * VLEN];
+        for (int c = 0; c < CODEBOOK_SIZE; c++) {
+            float dd = distance16(&codebook[c * VLEN], v);
+            if (dd < min_dist) { min_dist = dd; min_index = c; }
+        }
+        labels[i] = (uint8_t)min_index;
+    }
     double t_lbg1 = wtime();
     res.lbg_time = t_lbg1 - t_lbg0;
     res.proc_time += res.lbg_time;
