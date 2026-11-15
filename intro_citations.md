@@ -1,75 +1,91 @@
-# خريطة الاستشهادات للمقدمة 1.1 (الفقرات 2 إلى 7)
+# خريطة الاستشهادات للمقدمة 1.1 (الفقرات 2 إلى 7), النسخة 2
 
 النص لم يُغيَّر. الأرقام هي أرقام قائمتج الحالية (تُعاد ترقيمتها حسب أول ظهور في النهاية).
 
 مفتاح الحالة:
-- **متحقق**: قرأت النص نفسه (PDF أو نص لصقتيه) والادعاء موجود.
-- **ملاحظاتج**: مدعوم بملاحظاتج بملفي PAPER_AutoRecovered.docx وtabel_related.docx (قراءة ثانوية، غير متحقق من PDF المصدر).
+- **متحقق**: قرأت نص الـPDF ووجدت الادعاء (مع رقم الصفحة).
+- **ملاحظاتج**: مدعوم بملاحظاتج فقط (غير متحقق من PDF المصدر).
 - **ملخص**: مدعوم بملخص الورقة فقط.
 - **غير متحقق**: لا أملك سنداً.
 
+## ما تحققت منه من PDF [4] Bilal و[5] Severo
+
+**[4] Bilal, Ullah, Mujahid, Fouzder, J. Imaging 2024, 10(5), 124**
+- العنوان والمؤلفون يطابقون قائمة المراجع. (جدول Word عندج غلط: "Pre-Scaling" و"Mahmood" و"Faisal").
+- ص 1 (الملخص): الخوارزمية تحسّن LBG "by reducing the total number of comparisons among the codebook and training vectors using a match function"، والـrescaling بالـbilinear interpolation (nearest neighborhood) لتقليل المقارنة؛ "reduces the computational complexity by 50.2% compared to LBG"، وتقليل الذاكرة 20%.
+- ص 7 و11: يستخدم SSIM (جدول المقارنة بملفج "SSIM غير مستخدم" غلط). ص 9: يستخدم BPP وMSE وPSNR.
+- ص 15: متوسط الزمن لحجم codebook = 16 عند 0.25 bpp: LBG = 9.07 s و FLBG = 4.02 s (تحسّن 55.65%).
+- لا يذكر CR كنتيجة (ملاحظة "غير محسوب" صحيحة، والرقم 16 مشتق من bpp).
+- ص 8: Intel Core i5-3210M وMATLAB R2019a وصور رمادية 512×512. لا ذكر لأي تنفيذ متوازٍ (بحث نصي).
+- ص 13: "Increasing the codebook size enhances the image quality but also increases the total number of comparisons among codewords and training vectors, resulting in longer computation times".
+
+**[5] Severo, Ferreira, Spencer, Nascimento, Madeiro, Sensors 2024, 24, 2606**
+- ص 1: LBG "is the most popular VQ codebook design algorithm"؛ تهيئة LBG "directly influences VQ performance, as the convergence speed and codebook quality depend on the initial codebook"؛ العمل "evaluates the impacts of initialization strategies on swarm intelligence algorithms for codebook design" بجودة الصور المعاد بناؤها وسرعة التقارب (عدد التكرارات).
+- ص 3: "the LBG algorithm stands out for being the most popular".
+- ص 3 و4 (القسم 2.1): وصف LBG كخوارزمية تجميع تتحسن تكرارياً (تقسيم Voronoi بأقرب codevector، حساب التشويه، شرط توقف بنسبة تغيّر التشويه ≤ ε، تحديث المراكز). هذا يطابق كودج (شرط التوقف `|D_prev − D| / D ≤ ε`).
+- لا ذكر لأي تنفيذ متوازٍ.
+
 ## الفقرة 2
 
-| الجملة | الاستشهاد المقترح | الأساس | الحالة |
+| الجملة | الاستشهاد | الأساس | الحالة |
 |---|---|---|---|
-| transform-based methods such as DWT | [3] Ranjan | ملاحظاتج: PCA + 2D-DWT (Haar) + Hard Thresholding + Canonical Huffman | ملاحظاتج |
-| VQ is a lossy technique ... codebook | [21] Sayood (يُضاف) | لا سند عندي للفصل والصفحة | غير متحقق (يحتاج صفحة) |
-| LBG is a widely used method for generating VQ codebooks | [41] Ghadami، [42] Rahebi (بدل أو مع [4], [5]) | ملاحظاتج: [41] = VQ + LBG + ISCA؛ [42] = VQ-LBG محسّن بـ WOA | ملاحظاتج |
-| iterative clustering: assign to nearest codeword, update codewords | [21] Sayood | النص الملصوق بآخر tabel_related.docx: "algorithm for the case where we have a training set ... looks very much like the k-means algorithm"، يُعرّف مناطق التكميم وإعادة حساب القيم كمتوسطات | متحقق (من نص ملصوق يبدو من Sayood؛ تأكدي من المصدر والصفحة) |
-| the codebook influences distortion and image quality | [41], [42] (بدل [4], [5]) | ملاحظاتج: تحسين الـ codebook يحسّن جودة إعادة البناء | ملاحظاتج |
+| transform-based methods such as DWT | [3] Ranjan | ملاحظاتج: PCA + 2D-DWT | ملاحظاتج |
+| VQ is a lossy technique ... codebook | [21] Sayood | لم أقرأ الكتاب | غير متحقق |
+| LBG is a widely used method for generating VQ codebooks | [5] (ص 1 و3: "most popular")، [4] (ص 1: "renowned") | | **متحقق** |
+| iterative clustering: assign to nearest codeword, update codewords | [5] القسم 2.1 (ص 3 إلى 4) | | **متحقق** |
+| the codebook influences distortion and quality | [4], [5] | [5] ص 1: تصميم الـcodebook ذو أهمية كبيرة لجودة الإشارات المكمّمة | **متحقق** |
 
 ## الفقرة 3
 
 | الجملة | الاستشهاد | الأساس | الحالة |
 |---|---|---|---|
-| LBG training is computationally costly | [4] Bilal (ويمكن [42]) | ملاحظاتج: الفجوة التي عالجها [4] هي الكلفة الزمنية العالية لتوليد الـ codebook في LBG؛ [42]: high computational cost | ملاحظاتج |
-| execution time depends on number of vectors, codebook size, convergence | بدون استشهاد (أو إحالة لتحليل التعقيد بالفصل 3) | استنتاج ذاتي | لا يحتاج |
-| Bilal et al. [4] ... fast LBG based on rescaling | [4] | ملاحظاتج: VQ + LBG + FLBG (Pre-Scaling)، هدفه تقليل زمن توليد الـ codebook (LBG ≈ 9.07 s مقابل FLBG ≈ 4.02 s) | ملاحظاتج. **عبارة "to reduce the number of comparisons" غير موجودة بملاحظاتج** |
-| Severo et al. [5] ... initialization | [5] | لا شي بملفاتج | غير متحقق |
+| LBG training requires repeated distance calculations ... costly | [4] | ص 1 و13: خفض المقارنات بين الـcodebook ومتجهات التدريب يقلل التعقيد؛ زيادة حجم الـcodebook تزيد المقارنات والزمن | **متحقق** |
+| execution time influenced by number of vectors, codebook size, convergence | [4] لحجم الـcodebook (ص 13)؛ [5] للتقارب (ص 1: سرعة التقارب تعتمد على التهيئة) | عدد متجهات التدريب: لا سند صريح | حجم الـcodebook والتقارب **متحقق**؛ عدد المتجهات غير متحقق |
+| Bilal et al. [4] ... fast LBG based on rescaling to reduce the number of comparisons | [4] | ص 1 | **متحقق** (النص صحيح كما هو) |
+| Severo et al. [5] ... initialization | [5] | ص 1. ملاحظة: الدراسة عن التهيئة **لخوارزميات swarm intelligence** | **متحقق** (يمكن إضافة "swarm-intelligence-based" للدقة) |
 
 ## الفقرة 4
 
 | الجملة | الاستشهاد | الأساس | الحالة |
 |---|---|---|---|
-| Parallel computing ... reduce execution time | [26] Pousa | ص 111: خوارزميات متوازية على معماريات متوازية لتقليل زمن التنفيذ | متحقق |
-| MPI provides communication operations | [74] MPI Forum | لم أقرأه | غير متحقق |
-| Hu et al. [6] applied MPI ... | [6] | لا شي بملفاتج | غير متحقق (**الأخطر**) |
-| MPI processes can distribute distance calculations ... | بدون استشهاد (تصميمج، الفصل 3) | | لا يحتاج |
+| Parallel computing ... reduce execution time | [26] Pousa | ص 111 | متحقق |
+| MPI provides communication operations | [74] MPI Forum | | غير متحقق |
+| Hu et al. [6] applied MPI ... | [6] | | غير متحقق (الأخطر) |
 
 ## الفقرة 5
 
 | الجملة | الاستشهاد | الأساس | الحالة |
 |---|---|---|---|
-| Heterogeneous multicore: P-cores and E-cores | لا مصدر | لا شي بملفاتج | غير متحقق |
-| Velugoti et al. [7] ... hybrid CPU architectures | [7] | ملخص الورقة | ملخص |
-| equal workloads on different cores → waiting | بدون استشهاد (استنتاج، يدعمه الفصل 4) | | |
-| communication overhead can reduce parallel efficiency | [31] Schryen | ص 4: القيم بدون كلفة هي حدود عليا لما يتحقق عملياً | متحقق (يغطي الكلفة فقط، مو عدم التوازن) |
-| Fernández-Fraga et al. [8] | [8] | ملخص الورقة | ملخص |
+| Heterogeneous multicore: P-cores and E-cores | لا مصدر | | غير متحقق |
+| Velugoti et al. [7] | [7] | ملخص | ملخص |
+| communication overhead can reduce parallel efficiency | [31] Schryen | ص 4 | متحقق (للكلفة فقط) |
+| Fernández-Fraga et al. [8] | [8] | ملخص | ملخص |
 
 ## الفقرة 6 (الجدة)
 
-تعتمد على القسم 1.5 (لم أره). ملاحظاتج تدعم أن [4] و[42] لا يعتمدان التوازي (حسب ملاحظاتج)، لكن الجملة تحتاج أن يغطي 1.5 الأعمال المتوازية القريبة، منها [71] Manohar (VQ على GPU) و[11] Zangana.
+[4] و[5]: لا يتناولان التنفيذ المتوازي (بحث نصي بالـPDFين)، فيدعمان أنهما لا يعالجان توزيع العمل. الجملة كاملة تعتمد على القسم 1.5 (لم أره) ويجب أن يغطي الأعمال المتوازية القريبة، منها [71] Manohar و[11] Zangana.
 
 ## الفقرة 7
 
 | الجملة | الاستشهاد | الأساس | الحالة |
 |---|---|---|---|
-| LBG vector quantization | [21] (+ LBG الأصلي غير موجود بقائمتج) | | انظري أعلاه |
-| delta coding | [34] Zhu، [21]، وربما [19] Lin | [34]: متحقق من النص الكامل (معادلتا 3 و8). [19]: ملاحظاتج تقول "Difference/XOR على جدول المؤشرات" | [34] متحقق؛ [19] ملاحظاتج |
+| LBG vector quantization | [5] القسم 2.1، (و[21]) | | [5] متحقق |
+| delta coding | [34] Zhu، [21]، وربما [19] Lin | [34]: متحقق (معادلتا 3 و8). [19]: ملاحظاتج "Difference/XOR على جدول المؤشرات" | [34] متحقق؛ [19] ملاحظاتج |
 | Huffman coding (**لا canonical**) | [21] (+ Huffman 1952 غير موجود) | | غير متحقق |
 | collective communication | [74] | | غير متحقق |
 
-## تناقضات بملفاتج لازم تُحسم قبل الاستشهاد
+## تناقضات بملفاتج (بعد قراءة [4])
 
-1. **Bilal [4]: العنوان والمؤلفون.** جدولج: "Fast Codebook Generation Using Pre-Scaling for LBG-Based Image Compression" ومؤلفوه "O. Mahmood, T. Faisa...". قائمة المراجع: "Fast Linde–Buzo–Gray (FLBG) algorithm ... rescaling using bilinear interpolation" ومؤلفوه "O. Mujahid, T. Fouzder". افتحي الورقة وانسخي العنوان والأسماء الصحيحة.
-2. **Bilal [4]: SSIM.** ملاحظة "القوة" تقول إن PSNR وSSIM قريبان من LBG، بينما جدول المقارنة يقول SSIM "غير مستخدم". واحدة خطأ.
-3. **Bilal [4]: CR.** أول جدول يكتب CR = 16، وجدول المقارنة يقول "غير محسوب". الرقم 16 على الأرجح مشتق من bpp (8 ÷ 0.5) ولا تذكره الورقة.
-4. **tabel_related.docx:** عدة صفوف فيها مؤلفون لا يطابقون العنوان (مثلاً عنوان Thomas et al. بمؤلفي WISE: Mao وWang وGuan وXue). جدول PAPER_AutoRecovered.docx متسق أكثر، فاعتمديه.
-5. **Rahebi [42]:** السنة 2025 في tabel_related.docx، و2022 بقائمة المراجع وبالجدول الآخر. اعتمدي 2022 بعد التأكد.
-6. **نص LBG الملصوق** بآخر tabel_related.docx يبدو منقولاً حرفياً من كتاب (يشير إلى [115] Lloyd و[125] LBG). لا تنسخينه، أعيدي صياغته بكلماتج واستشهدي بـ[21] مع الصفحة.
+1. عنوان [4] ومؤلفوه: **قائمة المراجع صحيحة**، وجدول Word خطأ، فصحّحيه.
+2. SSIM: **مستخدم** بالورقة (ص 7 و11). جدول المقارنة "غير مستخدم" خطأ.
+3. CR: غير مذكور بالورقة، والرقم 16 مشتق من bpp (بقاؤه بجدولج كمشتق فقط).
+4. صفوف `tabel_related.docx` ببعض الأحيان مؤلفوها لا يطابقون العنوان. اعتمدي جدول `PAPER_AutoRecovered.docx`.
+5. Rahebi [42]: السنة 2022 (قائمة المراجع)، و2025 بأحد الملفين.
+6. نص LBG بآخر `tabel_related.docx` يبدو منقولاً من كتاب، لا تنسخينه حرفياً.
 
-## مطلوب لإغلاق الباقي
+## المتبقي
 
-- PDF لـ [4] و[5] و[6] (و[19] إذا تريدين استخدام Diff/XOR لدعم Delta).
-- قرار: إضافة LBG الأصلي (1980) وHuffman (1952) أو الاكتفاء بـ[21].
-- مصدر للأنوية الهجينة P/E (فقرة 5).
+- **Sayood [21]:** PDF الفصول المطلوبة (فصل VQ، وHuffman، وDifferential Encoding، والأساسيات الرياضية للإنتروبي) لتحديد الصفحات.
+- [6] Hu (هل يستخدم MPI؟)، [19] Lin (Diff/XOR؟)، [7] و[8] (نص كامل)، [74] MPI Forum، ومصدر الأنوية الهجينة P/E.
+- قرار إضافة LBG الأصلي (1980) وHuffman (1952).
+- جملة تصنيف lossless/lossy الصريحة من [2].
