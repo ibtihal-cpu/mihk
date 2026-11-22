@@ -359,8 +359,10 @@ static inline float distance16(const float *a, const float *b) {
 
 /* verbose=1 reproduces seco.c's per-split "k=... (first/converged)"
    progress lines; verbose=0 reproduces seg.c's silence. See judgment
-   call #2 in the header comment. */
-void lbg(const float *training, int num_vectors, int target_K,
+   call #2 in the header comment.
+   Returns the TOTAL number of Lloyd iterations summed over all split
+   stages (k=2..target_K), so sequential and parallel work can be compared. */
+int lbg(const float *training, int num_vectors, int target_K,
          uint8_t *labels, float *codebook, int verbose)
 {
     for (int j = 0; j < VLEN; j++) {
@@ -374,6 +376,7 @@ void lbg(const float *training, int num_vectors, int target_K,
     float *sum   = NULL;
     int   *count = NULL;
     int allocated_k = 0;
+    int total_iters = 0;
 
     while (k < target_K) {
         for (int i = 0; i < k; i++) {
@@ -433,11 +436,13 @@ void lbg(const float *training, int num_vectors, int target_K,
                 printf("k=%3d iter=%3d distortion=%.4f  (first)\n", k, iterations, distortion);
 
         } while (iterations < 100 && improvement > EPSILON);
+        total_iters += iterations;
 
         if (verbose)
             printf("k=%3d iter=%3d distortion=%.4f  (converged)\n", k, iterations, distortion);
     }
     free(sum); free(count);
+    return total_iters;
 }
 
 void decompress_image(uint8_t *reconstructed, int width, int height,
@@ -773,7 +778,7 @@ static int run_grayscale(const char *image_path)
 
     clock_t t_lbg0_cpu = clock();
     double  t_lbg0     = wtime();
-    lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
+    int lbg_iters = lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
     double  t_lbg1     = wtime();
     clock_t t_lbg1_cpu = clock();
 
@@ -918,6 +923,7 @@ static int run_grayscale(const char *image_path)
     printf("  3) Build train vectors   : %.4f s\n", tt_build);
     printf("  4) LBG (wall time)       : %.4f s\n", tt_lbg);
     printf("  4) LBG (CPU  time)       : %.4f s\n", tt_lbg_cpu);
+    printf("  4) LBG total iterations  : %d\n", lbg_iters);
     printf("  5) Entropy (before)      : %.4f s\n", tt_ent);
     printf("  6) Codebook float->u8    : %.4f s\n", tt_cvt);
     printf("  7) Decompress (LBG only) : %.4f s\n", tt_dec);
@@ -956,6 +962,7 @@ static int run_grayscale(const char *image_path)
 typedef struct {
     double psnr, ssim, mse, cr_system;
     double lbg_time;
+    int lbg_iters;
     int compressed_bytes;
     uint8_t *original;
     uint8_t *reconstructed;
@@ -988,7 +995,7 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
         training_f[i] = (float)training_set[i];
 
     double t_lbg0 = wtime();
-    lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/1);
+    res.lbg_iters = lbg(training_f, num_vectors, CODEBOOK_SIZE, labels, codebook, /*verbose=*/0);
     double t_lbg1 = wtime();
     res.lbg_time = t_lbg1 - t_lbg0;
     free(training_f);
@@ -1028,8 +1035,8 @@ static ChannelResult process_channel(uint8_t *channel_image, const char *channel
     res.reconstructed  = reconstructed_filtered;
     free(reconstructed);
 
-    printf("PSNR=%.2f dB  SSIM=%.4f  CR(system)=%.2fX  LBG time=%.4fs\n",
-           res.psnr, res.ssim, res.cr_system, res.lbg_time);
+    printf("PSNR=%.2f dB  SSIM=%.4f  CR(system)=%.2fX  LBG time=%.4fs  LBG iters=%d\n",
+           res.psnr, res.ssim, res.cr_system, res.lbg_time, res.lbg_iters);
 
     free(codebook);
     free(labels);
